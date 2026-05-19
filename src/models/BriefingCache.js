@@ -13,6 +13,7 @@ const BriefingCacheSchema = new mongoose.Schema({
   generatedAt: {
     type: Date,
     default: Date.now,
+    expires: 86400,
   },
 });
 
