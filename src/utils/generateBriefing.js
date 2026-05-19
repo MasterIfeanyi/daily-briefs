@@ -1,4 +1,4 @@
-export async function generateWithGemma(weatherData, stockData, config) {
+export async function generateBriefing(weatherData, stockData, config) {
   const model = genAI.getGenerativeModel({ model: 'gemma-4-26b-a4b-it' });
 
   const prompt = `

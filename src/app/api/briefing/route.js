@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import BriefingCache from '@/models/BriefingCache';
 import { getConfig } from '@/lib/getConfig';
-import { fetchWeather } from '@/lib/fetchWeather';
-import { fetchStocks } from '@/lib/fetchStocks';
-import { generateBriefing } from '@/lib/generateBriefing';
+import { fetchWeather } from '@/utils/fetchWeather';
+import { fetchStocks } from '@/utils/fetchStocks';
+import { generateBriefing } from '@/utils/generateBriefing';
 
 export async function GET() {
   try {
