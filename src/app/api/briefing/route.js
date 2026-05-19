@@ -4,6 +4,7 @@ import BriefingCache from '@/models/BriefingCache';
 import { getConfig } from '@/lib/getConfig';
 import { fetchWeather } from '@/utils/fetchWeather';
 import { fetchStocks } from '@/utils/fetchStocks';
+import { fetchNews } from '@/utils/fetchNews';
 import { generateBriefing } from '@/utils/generateBriefing';
 
 export async function GET() {
@@ -22,6 +23,7 @@ export async function GET() {
     const [weatherData, stockData] = await Promise.all([
       fetchWeather(config.coordinates.lat, config.coordinates.lon),
       fetchStocks(config.stocks.us, config.stocks.world),
+      fetchNews()
     ]);
 
     const aiContent = await generateBriefing(weatherData, stockData, config);
@@ -35,8 +37,10 @@ export async function GET() {
       },
       wordOfTheDay: aiContent.wordOfTheDay,
       joke: aiContent.joke,
+      news: aiContent.news || [],
     };
 
+    // save to mongodb
     await BriefingCache.create({ date: today, content: briefingContent });
 
     return NextResponse.json({ success: true, data: briefingContent, fromCache: false });
