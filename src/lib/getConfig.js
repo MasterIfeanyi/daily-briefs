@@ -1,5 +1,5 @@
 import connectDB from './mongodb';
-import UserConfig from '../models/UserConfig';
+import UserConfig from '@/models/UserConfig';
 
 export async function getConfig() {
   await connectDB();

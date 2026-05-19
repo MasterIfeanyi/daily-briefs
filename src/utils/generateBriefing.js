@@ -11,7 +11,9 @@ export async function generateBriefing(weatherData, rawNewsData, stockData, conf
     }
   });
 
-  const allStocks = [...stockData.us, ...stockData.world];
+  const usStocks = stockData && Array.isArray(stockData.us) ? stockData.us : [];
+  const worldStocks = stockData && Array.isArray(stockData.world) ? stockData.world : [];
+  const allStocks = [...usStocks, ...worldStocks];
 
   const prompt = `
 You are an expert news editor and daily briefing assistant. Your task is to process real-world raw information data feeds and format them neatly.

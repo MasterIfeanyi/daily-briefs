@@ -19,6 +19,7 @@ export async function GET() {
     }
 
     const config = await getConfig();
+    console.log("DATABASE CONFIG CHECK:", config);
 
     const [weatherData, stockData] = await Promise.all([
       fetchWeather(config.coordinates.lat, config.coordinates.lon),
@@ -26,7 +27,15 @@ export async function GET() {
       fetchNews()
     ]);
 
-    const aiContent = await generateBriefing(weatherData, stockData, config);
+    let rawNewsData = [];
+    try {
+      rawNewsData = await fetchNews();
+    } catch (newsError) {
+      console.error("Non-fatal news fetch issue:", newsError.message);
+      // The application continues even if the news feed goes down
+    }
+
+    const aiContent = await generateBriefing(weatherData, rawNewsData, stockData, config);
 
     const briefingContent = {
       weather: weatherData,

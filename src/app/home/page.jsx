@@ -99,7 +99,9 @@ export default function DailyBriefing() {
           },
           wordOfTheDay: { word: "Ephemeral", partOfSpeech: "adjective", definition: "Lasting for a very short time.", usedInSentence: "The ephemeral beauty of the sunset left everyone speechless.", origin: "Greek: ephemeros, lasting a day." },
           joke: { setup: "Why do programmers prefer dark mode?", punchline: "Because light attracts bugs." },
-          news: []
+          news: [
+            { title: "Real-time updates temporarily unavailable", description: "The live news stream couldn't be loaded. Check your database connections or network logs." }
+          ]
         });
       } finally {
         setLoading(false);
