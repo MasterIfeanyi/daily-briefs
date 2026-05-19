@@ -1,35 +1,30 @@
-import axios from 'axios';
+// 1. Import the main class from the library
+import YahooFinance from 'yahoo-finance2';
+
+// 2. Instantiate it once outside the function so it persists across calls
+const yahooFinance = new YahooFinance();
 
 export async function fetchStocks(usTickers, worldTickers) {
-  const allTickers = [...usTickers, ...worldTickers].join(',');
+  try {
+    const allTickers = [...usTickers, ...worldTickers];
+    
+    // 3. Make the call using the new instance
+    const results = await yahooFinance.quote(allTickers);
 
-  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${allTickers}`;
+    const formattedStocks = results.map(stock => ({
+      symbol: stock.symbol,
+      name: stock.longName || stock.shortName || stock.symbol,
+      price: stock.regularMarketPrice,
+      change: stock.regularMarketChange,
+      isUp: stock.regularMarketChange >= 0
+    }));
 
-  const res = await axios.get(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0' },
-  });
-
-  const results = res.data.quoteResponse.result;
-
-  const format = (quote) => ({
-    symbol: quote.symbol,
-    name: quote.shortName,
-    price: parseFloat(quote.regularMarketPrice.toFixed(2)),
-    change: parseFloat(quote.regularMarketChangePercent.toFixed(2)),
-    isUp: quote.regularMarketChangePercent >= 0,
-  });
-
-  return {
-    us: results
-      .filter(q => usTickers.includes(q.symbol))
-      .map(format),
-    world: results
-      .filter(q => worldTickers.includes(q.symbol))
-      .map(format),
-    raw: results.map(q => ({
-      symbol: q.symbol,
-      price: q.regularMarketPrice,
-      change: q.regularMarketChangePercent,
-    })),
-  };
+    return {
+      us: formattedStocks.filter(s => usTickers.includes(s.symbol)),
+      world: formattedStocks.filter(s => worldTickers.includes(s.symbol))
+    };
+  } catch (error) {
+    console.error("Yahoo Finance Library Error:", error);
+    throw error;
+  }
 }

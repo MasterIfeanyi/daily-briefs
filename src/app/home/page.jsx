@@ -36,7 +36,7 @@ export default function DailyBriefing() {
         const res = await fetch("/api/briefing");
         if (res.ok) {
           const result = await res.json();
-          setData(result);
+          setData(result.data);
         } else {
           throw new Error("API Route not found, using fallback mock data.");
         }
@@ -57,7 +57,8 @@ export default function DailyBriefing() {
             commentary: "Markets are cautiously optimistic today."
           },
           wordOfTheDay: { word: "Ephemeral", partOfSpeech: "adjective", definition: "Lasting for a very short time.", usedInSentence: "The ephemeral beauty of the sunset left everyone speechless.", origin: "Greek: ephemeros, lasting a day." },
-          joke: { setup: "Why do programmers prefer dark mode?", punchline: "Because light attracts bugs." }
+          joke: { setup: "Why do programmers prefer dark mode?", punchline: "Because light attracts bugs." },
+          news: []
         });
       } finally {
         setLoading(false);
@@ -66,18 +67,14 @@ export default function DailyBriefing() {
     fetchBriefing();
   }, []);
 
-  const toggleTheme = () => {
-    const newTheme = isDarkMode ? "light" : "dark";
-    document.documentElement.setAttribute("data-theme", newTheme);
-    document.cookie = `theme=${newTheme};path=/;max-age=31536000`;
-    setIsDarkMode(!isDarkMode);
-  };
+
+  // <LocationPrompt />
+
 
   return (
 
     <NavbarLayout>
       <div className="min-h-screen flex flex-col">
-
 
         <div className="w-full h-px bg-(--brand-secondary)" />
 
@@ -88,7 +85,6 @@ export default function DailyBriefing() {
 
           <div className="flex flex-col lg:flex-row gap-10">
             <div className="lg:w-[65%] flex flex-col">
-              <LocationPrompt />
 
               <SectionHeader title="Weather" />
               {loading ? <SkeletonCard heightClass="h-40" /> : <WeatherCard weather={data.weather} />}

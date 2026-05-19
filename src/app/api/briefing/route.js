@@ -41,6 +41,7 @@ export async function GET() {
 
     return NextResponse.json({ success: true, data: briefingContent, fromCache: false });
   } catch (error) {
+    console.error("API Route Error:", error);
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }

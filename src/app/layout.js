@@ -19,14 +19,16 @@ export default function RootLayout({ children }) {
       suppressHydrationWarning
       className={`${nunito.className} h-full antialiased`}
     >
-      <ThemeProvider
-        attribute="data-theme"
-        defaultTheme="system"
-        enableSystem
-        disableTransitionOnChange
-      >
-        <body className="min-h-full flex flex-col">{children}</body>
-      </ThemeProvider>
+      <body className="min-h-full flex flex-col">
+        <ThemeProvider
+          attribute="data-theme"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   );
 }
