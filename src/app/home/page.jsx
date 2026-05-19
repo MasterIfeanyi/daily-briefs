@@ -11,6 +11,7 @@ import WorldStocks from "@/components/WorldStocks";
 import NewsSection from "@/components/NewsSection";
 import LocationPrompt from "@/components/LocationPrompt";
 import NavbarLayout from "@/components/NavbarLayout";
+import { getGreeting } from "@/utils/greeting";
 
 // ✅ Moved outside DailyBriefing so React doesn't recreate it on every render
 const SectionHeader = ({ title }) => (
@@ -26,6 +27,46 @@ export default function DailyBriefing() {
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+
+
+  // Hook to handle onboarding geolocations automatically on boot
+  useEffect(() => {
+    const hasPrompted = localStorage.getItem("briefing_location_prompted");
+    
+    if (!hasPrompted && "geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          localStorage.setItem("briefing_location_prompted", "true");
+          try {
+            const saveRes = await fetch("/api/config", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                lat: position.coords.latitude,
+                lon: position.coords.longitude,
+              }),
+            });
+            
+            if (saveRes.ok) {
+              // Location sync successful! Refresh brief payload data silently
+              const freshBrief = await fetch("/api/briefing");
+              if (freshBrief.ok) {
+                const result = await freshBrief.json();
+                setData(result.data);
+              }
+            }
+          } catch (err) {
+            console.error("Auto sync location storage pipeline failed:", err);
+          }
+        },
+        (error) => {
+          console.warn("User blocked permission or device timed out:", error.message);
+          localStorage.setItem("briefing_location_prompted", "true");
+        }
+      );
+    }
+  }, []);
 
 
 
@@ -80,7 +121,7 @@ export default function DailyBriefing() {
 
         <main className="max-w-7xl mx-auto w-full px-6 py-10 flex-1">
           <h1 className="text-5xl font-extrabold text-(--foreground) tracking-tight mb-10">
-            Good morning.
+            {getGreeting()}
           </h1>
 
           <div className="flex flex-col lg:flex-row gap-10">
