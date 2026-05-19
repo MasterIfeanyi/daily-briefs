@@ -1,5 +1,6 @@
 import { Nunito } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 const nunito = Nunito({
   subsets: ["latin"],
@@ -18,7 +19,14 @@ export default function RootLayout({ children }) {
       suppressHydrationWarning
       className={`${nunito.className} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <ThemeProvider
+        attribute="data-theme"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <body className="min-h-full flex flex-col">{children}</body>
+      </ThemeProvider>
     </html>
   );
 }
