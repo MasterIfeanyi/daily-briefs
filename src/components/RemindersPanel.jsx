@@ -15,7 +15,9 @@ export default function RemindersPanel() {
     useEffect(() => {
         async function fetchReminders() {
             try {
-                const res = await fetch(`/api/reminders?date=${today}`);
+                const res = await fetch(`/api/reminders?date=${today}`,{
+                    credentials: "include"
+                });
                 if (res.ok) {
                     const json = await res.json();
                     // Map database items. MongoDB uses '_id' instead of 'id'

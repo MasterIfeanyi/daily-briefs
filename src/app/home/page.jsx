@@ -42,6 +42,7 @@ export default function DailyBriefing() {
             const saveRes = await fetch("/api/config", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
+              credentials: "include",
               body: JSON.stringify({
                 lat: position.coords.latitude,
                 lon: position.coords.longitude,
@@ -74,7 +75,9 @@ export default function DailyBriefing() {
 
     async function fetchBriefing() {
       try {
-        const res = await fetch("/api/briefing");
+        const res = await fetch("/api/briefing", {
+          credentials: "include"
+        });
         if (res.ok) {
           const result = await res.json();
           setData(result.data);
