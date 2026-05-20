@@ -31,7 +31,7 @@ export async function GET() {
     const [weatherData, stockData, rawNewsData] = await Promise.all([
       fetchWeather(config.coordinates.lat, config.coordinates.lon),
       fetchStocks(config.stocks.us, config.stocks.world),
-      fetchNews(),
+      // fetchNews(),
     ]);
 
     const aiContent = await generateBriefing(weatherData, rawNewsData, stockData, config);

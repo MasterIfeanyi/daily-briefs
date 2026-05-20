@@ -4,3 +4,12 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["mongodb", "mongoose"]
+  included_files = ["node_modules/mongodb/**", "node_modules/mongoose/**"]
+
+[build.environment]
+  NODE_VERSION = "20"
