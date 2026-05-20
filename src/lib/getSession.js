@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
-import { v4 as uuidv4 } from 'uuid';
+// import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 export async function getOrCreateSession() {
   const cookieStore = await cookies();
@@ -9,5 +10,5 @@ export async function getOrCreateSession() {
     return { sessionId: existing, isNew: false };
   }
 
-  return { sessionId: uuidv4(), isNew: true };
+  return { sessionId: randomUUID(), isNew: true };
 }
