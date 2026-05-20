@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import {parseLooseJson} from './parseLooseJson';
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+import { callWithRetry } from './callWithRetry';
 
 
 export async function generateBriefing(weatherData, rawNewsData, stockData, config) {
@@ -67,7 +68,7 @@ For stockCommentary, write one sentence of interesting context about today's mar
 Return ONLY a raw JSON object. Do NOT include any introductory sentences, conversational responses, conversational filler, markdown explanations, or markdown bullets outside of the JSON output structure.
 `;
 
-  const result = await model.generateContent(prompt);
+  const result = await callWithRetry(() => model.generateContent(prompt));
   const text = result.response.text().trim();
 
   // Clean and parse the strict response text
