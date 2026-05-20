@@ -10,7 +10,6 @@ const BriefingCacheSchema = new mongoose.Schema({
   date: {
     type: String,
     required: true,
-    unique: true,
   },
   content: {
     type: mongoose.Schema.Types.Mixed,
