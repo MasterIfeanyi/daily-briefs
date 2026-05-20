@@ -6,9 +6,10 @@ import { cleanupOldReminders } from "@/lib/cleanupOldReminders";
 
 export async function GET(request) {
     try {
-        
+
         await connectDB();
 
+        const today = getTodayKey();
         await cleanupOldReminders(today);
 
         const { searchParams } = new URL(request.url);
