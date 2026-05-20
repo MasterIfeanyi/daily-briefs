@@ -6,12 +6,17 @@ import { fetchWeather } from '@/utils/fetchWeather';
 import { fetchStocks } from '@/utils/fetchStocks';
 import { fetchNews } from '@/utils/fetchNews';
 import { generateBriefing } from '@/utils/generateBriefing';
+import { getTodayKey } from '@/lib/getTodayKey';
+import { cleanupOldBriefing } from "@/lib/cleanupOldBriefing";
 
 export async function GET() {
   try {
+
     await connectDB();
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayKey();
+
+    await cleanupOldBriefing(today);
 
     const cached = await BriefingCache.findOne({ date: today });
     if (cached) {
@@ -21,18 +26,20 @@ export async function GET() {
     const config = await getConfig();
     console.log("DATABASE CONFIG CHECK:", config);
 
-    const [weatherData, stockData] = await Promise.all([
-      fetchWeather(config.coordinates.lat, config.coordinates.lon),
-      fetchStocks(config.stocks.us, config.stocks.world),
-      fetchNews()
-    ]);
-
     let rawNewsData = [];
+    let weatherData;
+    let stockData;
+
     try {
-      rawNewsData = await fetchNews();
-    } catch (newsError) {
-      console.error("Non-fatal news fetch issue:", newsError.message);
+      [weatherData, stockData, rawNewsData] = await Promise.all([
+        fetchWeather(config.coordinates.lat, config.coordinates.lon),
+        fetchStocks(config.stocks.us, config.stocks.world),
+        fetchNews()
+      ]);
+    } catch (error) {
+      console.error("Non-fatal news fetch issue:", error.message);
       // The application continues even if the news feed goes down
+      throw error;
     }
 
     const aiContent = await generateBriefing(weatherData, rawNewsData, stockData, config);

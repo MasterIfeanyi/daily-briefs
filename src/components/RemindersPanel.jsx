@@ -2,19 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { TrashIcon } from "./Icons";
+import { getTodayKey } from "@/lib/getTodayKey";
 
 export default function RemindersPanel() {
     const [reminders, setReminders] = useState([]);
     const [inputValue, setInputValue] = useState("");
     const [loading, setLoading] = useState(true);
 
-    const getTodayDateString = () => new Date().toISOString().split("T")[0];
+    const today = getTodayKey();
 
     // 1. Read directly from MongoDB on mount
     useEffect(() => {
         async function fetchReminders() {
             try {
-                const today = getTodayDateString();
                 const res = await fetch(`/api/reminders?date=${today}`);
                 if (res.ok) {
                     const json = await res.json();
@@ -56,7 +56,7 @@ export default function RemindersPanel() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     text: textToSend,
-                    date: getTodayDateString()
+                    date: today
                 })
             });
 

@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 
+
 const BriefingCacheSchema = new mongoose.Schema({
   date: {
     type: String,
@@ -13,7 +14,6 @@ const BriefingCacheSchema = new mongoose.Schema({
   generatedAt: {
     type: Date,
     default: Date.now,
-    expires: 86400,
   },
 });
 

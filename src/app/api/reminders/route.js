@@ -1,13 +1,18 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Reminder from '@/models/Reminder';
+import { getTodayKey } from '@/lib/getTodayKey';
+import { cleanupOldReminders } from "@/lib/cleanupOldReminders";
 
 export async function GET(request) {
     try {
+        
         await connectDB();
 
+        await cleanupOldReminders(today);
+
         const { searchParams } = new URL(request.url);
-        const date = searchParams.get('date');
+        const date = searchParams.get('date') || getTodayKey();
 
         if (!date) {
             return NextResponse.json(
