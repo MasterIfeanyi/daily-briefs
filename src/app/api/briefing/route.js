@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import connectDB from '@/lib/mongodb';
 import BriefingCache from '@/models/BriefingCache';
 import { getConfig } from '@/lib/getConfig';
@@ -7,40 +8,31 @@ import { fetchStocks } from '@/utils/fetchStocks';
 import { fetchNews } from '@/utils/fetchNews';
 import { generateBriefing } from '@/utils/generateBriefing';
 import { getTodayKey } from '@/lib/getTodayKey';
-import { cleanupOldBriefing } from "@/lib/cleanupOldBriefing";
+import { cleanupOldBriefing } from '@/lib/cleanupOldBriefing';
 
 export async function GET() {
   try {
-
     await connectDB();
 
-    const today = getTodayKey();
+    const cookieStore = await cookies();
+    const sessionId = cookieStore.get('briefing_session')?.value;
+    if (!sessionId) return NextResponse.json({ success: false, error: 'No session' }, { status: 401 });
 
+    const today = getTodayKey();
     await cleanupOldBriefing(today);
 
-    const cached = await BriefingCache.findOne({ date: today });
+    const cached = await BriefingCache.findOne({ sessionId, date: today });
     if (cached) {
       return NextResponse.json({ success: true, data: cached.content, fromCache: true });
     }
 
-    const config = await getConfig();
-    console.log("DATABASE CONFIG CHECK:", config);
+    const config = await getConfig(sessionId);
 
-    let rawNewsData = [];
-    let weatherData;
-    let stockData;
-
-    try {
-      [weatherData, stockData, rawNewsData] = await Promise.all([
-        fetchWeather(config.coordinates.lat, config.coordinates.lon),
-        fetchStocks(config.stocks.us, config.stocks.world),
-        fetchNews()
-      ]);
-    } catch (error) {
-      console.error("Non-fatal news fetch issue:", error.message);
-      // The application continues even if the news feed goes down
-      throw error;
-    }
+    const [weatherData, stockData, rawNewsData] = await Promise.all([
+      fetchWeather(config.coordinates.lat, config.coordinates.lon),
+      fetchStocks(config.stocks.us, config.stocks.world),
+      fetchNews(),
+    ]);
 
     const aiContent = await generateBriefing(weatherData, rawNewsData, stockData, config);
 
@@ -56,15 +48,10 @@ export async function GET() {
       news: aiContent.news || [],
     };
 
-    // save to mongodb
-    await BriefingCache.create({ date: today, content: briefingContent });
+    await BriefingCache.create({ sessionId, date: today, content: briefingContent });
 
     return NextResponse.json({ success: true, data: briefingContent, fromCache: false });
   } catch (error) {
-    console.error("API Route Error:", error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

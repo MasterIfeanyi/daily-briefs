@@ -1,6 +1,12 @@
 import mongoose from 'mongoose';
 
 const UserConfigSchema = new mongoose.Schema({
+  sessionId: {
+    type: String,
+    required: true,
+    unique: true,
+    index: true,
+  },
   city: {
     type: String,
     default: 'Lagos',

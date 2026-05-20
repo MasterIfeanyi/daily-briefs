@@ -1,6 +1,11 @@
 import mongoose from 'mongoose';
 
 const ReminderSchema = new mongoose.Schema({
+  sessionId: {
+    type: String,
+    required: true,
+    index: true,
+  },
   text: {
     type: String,
     required: true,
