@@ -27,13 +27,21 @@ export default function DailyBriefing() {
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [slowLoad, setSlowLoad] = useState(false);
+  const [error, setError] = useState(false);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (loading) setSlowLoad(true);
+    }, 8000); // after 8 seconds
+    return () => clearTimeout(timer);
+  }, [loading]);
 
 
   // Hook to handle onboarding geolocations automatically on boot
   useEffect(() => {
     const hasPrompted = localStorage.getItem("briefing_location_prompted");
-    
+
     if (!hasPrompted && "geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
@@ -48,7 +56,7 @@ export default function DailyBriefing() {
                 lon: position.coords.longitude,
               }),
             });
-            
+
             if (saveRes.ok) {
               // Location sync successful! Refresh brief payload data silently
               const freshBrief = await fetch("/api/briefing");
@@ -85,6 +93,7 @@ export default function DailyBriefing() {
           throw new Error("API Route not found, using fallback mock data.");
         }
       } catch (err) {
+        setError(true);
         setData({
           weather: { temperature: 28, sunrise: "2026-05-19T06:12", sunset: "2026-05-19T18:45", weathercode: 2 },
           stocks: {
@@ -116,6 +125,24 @@ export default function DailyBriefing() {
 
   // <LocationPrompt />
 
+  {
+    slowLoad && loading && (
+      <p className="text-center text-(--muted-foreground) text-sm mb-4">
+        Still loading your briefing... this can take up to 30 seconds on first load.
+      </p>
+    )
+  }
+
+  if (!loading && !data) {
+    return (
+      <NavbarLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <p className="text-(--muted-foreground)">Something went wrong. Please refresh the page.</p>
+        </div>
+      </NavbarLayout>
+    );
+  }
+
 
   return (
 
@@ -123,6 +150,12 @@ export default function DailyBriefing() {
       <div className="min-h-screen flex flex-col">
 
         <div className="w-full h-px bg-(--brand-secondary)" />
+
+        {slowLoad && loading && (
+        <p className="text-center text-(--muted-foreground) text-sm mt-6">
+          Still loading your briefing... this can take up to 30 seconds on first load.
+        </p>
+      )}
 
         <main className="max-w-7xl mx-auto w-full px-6 py-10 flex-1">
           <h1 className="text-5xl font-extrabold text-(--foreground) tracking-tight mb-10">
@@ -133,10 +166,10 @@ export default function DailyBriefing() {
             <div className="lg:w-[65%] flex flex-col">
 
               <SectionHeader title="Weather" />
-              {loading ? <SkeletonCard heightClass="h-40" /> : <WeatherCard weather={data.weather} />}
+              {loading || !data?.weather ? <SkeletonCard heightClass="h-40" /> : <WeatherCard weather={data.weather} />}
 
               <SectionHeader title="US Stocks" />
-              {loading ? (
+              {loading || !data?.stocks ? (
                 <SkeletonCard heightClass="h-64" />
               ) : (
                 <div className="bg-(--surface) border border-(--border) rounded-xl p-5 shadow-sm">
@@ -152,10 +185,10 @@ export default function DailyBriefing() {
               )}
 
               <SectionHeader title="Word of the Day" />
-              {loading ? <SkeletonCard heightClass="h-48" /> : <WordCard wordData={data.wordOfTheDay} />}
+              {loading || !data?.wordOfTheDay ? <SkeletonCard heightClass="h-48" /> : <WordCard wordData={data.wordOfTheDay} />}
 
               <SectionHeader title="Joke of the Day" />
-              {loading ? <SkeletonCard heightClass="h-32" /> : <JokeCard joke={data.joke} />}
+              {loading || !data?.joke ? <SkeletonCard heightClass="h-32" /> : <JokeCard joke={data.joke} />}
             </div>
 
             <aside className="lg:w-[35%] flex flex-col gap-8">
@@ -166,12 +199,12 @@ export default function DailyBriefing() {
 
               <div>
                 <SectionHeader title="World Stocks" />
-                {loading ? <SkeletonCard heightClass="h-40" /> : <WorldStocks stocks={data.stocks.world} />}
+                {loading || !data?.stocks  ? <SkeletonCard heightClass="h-40" /> : <WorldStocks stocks={data.stocks.world} />}
               </div>
 
               <div>
                 <SectionHeader title="Top News" />
-                {loading ? (
+                {loading || !data?.news  ? (
                   <div className="space-y-4">
                     <SkeletonCard heightClass="h-28" />
                     <SkeletonCard heightClass="h-28" />

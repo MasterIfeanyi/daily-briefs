@@ -2,6 +2,7 @@ import { SunIcon } from "./Icons";
 
 export default function WeatherCard({ weather }) {
     const formatTime = (isoString) => {
+        if (!isoString) return "N/A";
         return new Intl.DateTimeFormat("en-US", {
             hour: "numeric",
             minute: "2-digit",
