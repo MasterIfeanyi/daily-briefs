@@ -7,7 +7,7 @@ export async function getConfig(sessionId) {
   let config = await UserConfig.findOne({ sessionId });
 
   if (!config) {
-    config = await UserConfig.create({});
+    config = await UserConfig.create({ sessionId });
   }
 
   return config;

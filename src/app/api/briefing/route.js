@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import connectDB from '@/lib/mongodb';
 import BriefingCache from '@/models/BriefingCache';
 import { getConfig } from '@/lib/getConfig';
@@ -9,21 +8,22 @@ import { fetchNews } from '@/utils/fetchNews';
 import { generateBriefing } from '@/utils/generateBriefing';
 import { getTodayKey } from '@/lib/getTodayKey';
 import { cleanupOldBriefing } from '@/lib/cleanupOldBriefing';
+import { getOrCreateSession } from '@/lib/getSession';
 
 export async function GET() {
   try {
     await connectDB();
 
-    const cookieStore = await cookies();
-    const sessionId = cookieStore.get('briefing_session')?.value;
-    if (!sessionId) return NextResponse.json({ success: false, error: 'No session' }, { status: 401 });
-
+    const { sessionId, isNew } = await getOrCreateSession();
     const today = getTodayKey();
+
     await cleanupOldBriefing(today);
 
     const cached = await BriefingCache.findOne({ sessionId, date: today });
     if (cached) {
-      return NextResponse.json({ success: true, data: cached.content, fromCache: true });
+      const response = NextResponse.json({ success: true, data: cached.content, fromCache: true });
+      if (isNew) attachSession(response, sessionId);
+      return response;
     }
 
     const config = await getConfig(sessionId);
@@ -50,8 +50,21 @@ export async function GET() {
 
     await BriefingCache.create({ sessionId, date: today, content: briefingContent });
 
-    return NextResponse.json({ success: true, data: briefingContent, fromCache: false });
+    const response = NextResponse.json({ success: true, data: briefingContent, fromCache: false });
+    if (isNew) attachSession(response, sessionId);
+    return response;
+
   } catch (error) {
+    console.error('BRIEFING CRASH:', error.message, error.stack);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
+}
+
+function attachSession(response, sessionId) {
+  response.cookies.set('briefing_session', sessionId, {
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 365,
+    path: '/',
+  });
 }

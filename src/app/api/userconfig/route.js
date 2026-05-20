@@ -1,24 +1,29 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import connectDB from '@/lib/mongodb';
 import UserConfig from '@/models/UserConfig';
 import axios from 'axios';
+import { getOrCreateSession } from '@/lib/getSession';
 
-async function getSessionId() {
-  const cookieStore = await cookies();
-  return cookieStore.get('briefing_session')?.value;
+function attachSession(response, sessionId) {
+  response.cookies.set('briefing_session', sessionId, {
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 365,
+    path: '/',
+  });
 }
 
 export async function GET() {
   try {
     await connectDB();
-    const sessionId = await getSessionId();
-    if (!sessionId) return NextResponse.json({ success: false, error: 'No session' }, { status: 401 });
+    const { sessionId, isNew } = await getOrCreateSession();
 
     let config = await UserConfig.findOne({ sessionId });
     if (!config) config = await UserConfig.create({ sessionId });
 
-    return NextResponse.json({ success: true, data: config });
+    const response = NextResponse.json({ success: true, data: config });
+    if (isNew) attachSession(response, sessionId);
+    return response;
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -27,11 +32,12 @@ export async function GET() {
 export async function POST(req) {
   try {
     await connectDB();
-    const sessionId = await getSessionId();
-    if (!sessionId) return NextResponse.json({ success: false, error: 'No session' }, { status: 401 });
-
+    const { sessionId, isNew } = await getOrCreateSession();
     const { lat, lon } = await req.json();
-    if (!lat || !lon) return NextResponse.json({ success: false, error: 'Missing coordinates' }, { status: 400 });
+
+    if (!lat || !lon) {
+      return NextResponse.json({ success: false, error: 'Missing coordinates' }, { status: 400 });
+    }
 
     let cityName = 'Lagos';
     let timezone = 'Africa/Lagos';
@@ -61,7 +67,9 @@ export async function POST(req) {
       { upsert: true, new: true }
     );
 
-    return NextResponse.json({ success: true, data: updatedConfig });
+    const response = NextResponse.json({ success: true, data: updatedConfig });
+    if (isNew) attachSession(response, sessionId);
+    return response;
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -70,17 +78,18 @@ export async function POST(req) {
 export async function PATCH(req) {
   try {
     await connectDB();
-    const sessionId = await getSessionId();
-    if (!sessionId) return NextResponse.json({ success: false, error: 'No session' }, { status: 401 });
-
+    const { sessionId, isNew } = await getOrCreateSession();
     const body = await req.json();
+
     const config = await UserConfig.findOneAndUpdate(
       { sessionId },
       { ...body, updatedAt: new Date() },
       { upsert: true, new: true }
     );
 
-    return NextResponse.json({ success: true, data: config });
+    const response = NextResponse.json({ success: true, data: config });
+    if (isNew) attachSession(response, sessionId);
+    return response;
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
