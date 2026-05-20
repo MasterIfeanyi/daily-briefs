@@ -12,4 +12,4 @@
   included_files = ["node_modules/mongodb/**", "node_modules/mongoose/**"]
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "22"
