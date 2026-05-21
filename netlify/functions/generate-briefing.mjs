@@ -1,62 +1,25 @@
 import connectDB from '../../src/lib/mongodb.js';
 import SharedBriefing from '../../src/models/SharedBriefing.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { fetchStocks } from '../../src/utils/fetchStocks.js';
+import { fetchNews } from '../../src/utils/fetchNews.js';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 function getTodayKey() {
-  return new Date().toLocaleDateString('en-CA');
+    return new Date().toLocaleDateString('en-CA');
 }
 
-async function fetchStocks() {
-  const tickers = ['AAPL', 'TSLA', 'NVDA', 'MSFT', 'NESN.SW', 'SONY.T', 'SAP.DE'];
-  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tickers.join(',')}`;
 
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0' },
-  });
-
-  const data = await res.json();
-  const results = data.quoteResponse.result;
-
-  const usTickers = ['AAPL', 'TSLA', 'NVDA', 'MSFT'];
-  const worldTickers = ['NESN.SW', 'SONY.T', 'SAP.DE'];
-
-  const format = (q) => ({
-    symbol: q.symbol,
-    name: q.shortName,
-    price: parseFloat(q.regularMarketPrice.toFixed(2)),
-    change: parseFloat(q.regularMarketChangePercent.toFixed(2)),
-    isUp: q.regularMarketChangePercent >= 0,
-  });
-
-  return {
-    us: results.filter(q => usTickers.includes(q.symbol)).map(format),
-    world: results.filter(q => worldTickers.includes(q.symbol)).map(format),
-    raw: results.map(q => ({
-      symbol: q.symbol,
-      price: q.regularMarketPrice,
-      change: q.regularMarketChangePercent,
-    })),
-  };
-}
-
-async function fetchNews() {
-  const res = await fetch(
-    `https://newsdata.io/api/1/news?apikey=${process.env.NEWS_API_KEY}&language=en&category=top`
-  );
-  const data = await res.json();
-  return data.results || [];
-}
 
 async function generateContent(stockData, newsData) {
-  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-  const model = genAI.getGenerativeModel({
-    model: 'gemma-4-26b-a4b-it',
-    generationConfig: { responseMimeType: 'application/json' },
-  });
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({
+        model: 'gemma-4-26b-a4b-it',
+        generationConfig: { responseMimeType: 'application/json' },
+    });
 
-  const prompt = `
+    const prompt = `
 You are a daily briefing assistant. Respond ONLY with valid JSON, no markdown, no backticks.
 
 Generate this exact structure:
@@ -89,55 +52,55 @@ ${JSON.stringify(newsData.slice(0, 10))}
 Return ONLY raw JSON. No extra text outside the JSON.
 `;
 
-  const result = await model.generateContent(prompt);
-  const text = result.response.text().trim().replace(/```json|```/g, '');
-  return JSON.parse(text);
+    const result = await model.generateContent(prompt);
+    const text = result.response.text().trim().replace(/```json|```/g, '');
+    return JSON.parse(text);
 }
 
 export default async function handler() {
-  try {
-    await connectDB();
+    try {
+        await connectDB();
 
-    const today = getTodayKey();
+        const today = getTodayKey();
 
-    const existing = await SharedBriefing.findOne({ date: today });
-    if (existing) {
-      console.log('Briefing already exists for today, skipping.');
-      return new Response('Already done', { status: 200 });
+        const existing = await SharedBriefing.findOne({ date: today });
+        if (existing) {
+            console.log('Briefing already exists for today, skipping.');
+            return new Response('Already done', { status: 200 });
+        }
+
+        console.log('Fetching stocks and news...');
+        const [stockData, newsData] = await Promise.all([
+            fetchStocks(),
+            fetchNews(),
+        ]);
+
+        console.log('Calling Gemma...');
+        const aiContent = await generateContent(stockData, newsData);
+
+        await SharedBriefing.create({
+            date: today,
+            content: {
+                stocks: {
+                    us: stockData.us,
+                    world: stockData.world,
+                    commentary: aiContent.stockCommentary,
+                },
+                wordOfTheDay: aiContent.wordOfTheDay,
+                joke: aiContent.joke,
+                news: aiContent.news || [],
+            },
+        });
+
+        console.log('Briefing saved successfully for', today);
+        return new Response('Done', { status: 200 });
+
+    } catch (err) {
+        console.error('Scheduled briefing failed:', err);
+        return new Response(err.message, { status: 500 });
     }
-
-    console.log('Fetching stocks and news...');
-    const [stockData, newsData] = await Promise.all([
-      fetchStocks(),
-      fetchNews(),
-    ]);
-
-    console.log('Calling Gemma...');
-    const aiContent = await generateContent(stockData, newsData);
-
-    await SharedBriefing.create({
-      date: today,
-      content: {
-        stocks: {
-          us: stockData.us,
-          world: stockData.world,
-          commentary: aiContent.stockCommentary,
-        },
-        wordOfTheDay: aiContent.wordOfTheDay,
-        joke: aiContent.joke,
-        news: aiContent.news || [],
-      },
-    });
-
-    console.log('Briefing saved successfully for', today);
-    return new Response('Done', { status: 200 });
-
-  } catch (err) {
-    console.error('Scheduled briefing failed:', err);
-    return new Response(err.message, { status: 500 });
-  }
 }
 
 export const config = {
-  schedule: '0 5 * * *',
+    schedule: '0 5 * * *',
 };

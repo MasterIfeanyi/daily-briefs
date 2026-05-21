@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import SharedBriefing from '@/models/SharedBriefing';
-import { getTodayKey } from '@/lib/getTodayKey';
+import { fetchStocks } from '@/utils/fetchStocks.js';
+import { fetchNews } from '@/utils/fetchNews.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -10,46 +11,6 @@ function getTodayKeyLocal() {
   return new Date().toLocaleDateString('en-CA');
 }
 
-async function fetchStocks() {
-  const tickers = ['AAPL', 'TSLA', 'NVDA', 'MSFT', 'NESN.SW', 'SONY.T', 'SAP.DE'];
-  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tickers.join(',')}`;
-
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0' },
-  });
-
-  const data = await res.json();
-  const results = data.quoteResponse.result;
-
-  const usTickers = ['AAPL', 'TSLA', 'NVDA', 'MSFT'];
-  const worldTickers = ['NESN.SW', 'SONY.T', 'SAP.DE'];
-
-  const format = (q) => ({
-    symbol: q.symbol,
-    name: q.shortName,
-    price: parseFloat(q.regularMarketPrice.toFixed(2)),
-    change: parseFloat(q.regularMarketChangePercent.toFixed(2)),
-    isUp: q.regularMarketChangePercent >= 0,
-  });
-
-  return {
-    us: results.filter(q => usTickers.includes(q.symbol)).map(format),
-    world: results.filter(q => worldTickers.includes(q.symbol)).map(format),
-    raw: results.map(q => ({
-      symbol: q.symbol,
-      price: q.regularMarketPrice,
-      change: q.regularMarketChangePercent,
-    })),
-  };
-}
-
-async function fetchNews() {
-  const res = await fetch(
-    `https://newsdata.io/api/1/news?apikey=${process.env.NEWS_API_KEY}&language=en&category=top`
-  );
-  const data = await res.json();
-  return data.results || [];
-}
 
 async function generateContent(stockData, newsData) {
   const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
