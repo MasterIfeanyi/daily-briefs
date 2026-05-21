@@ -211,6 +211,9 @@ export default function DailyBriefing() {
 
               <SectionHeader title="Word of the Day" />
               {loading || !data?.wordOfTheDay ? <SkeletonCard heightClass="h-48" /> : <WordCard wordData={data.wordOfTheDay} />}
+
+              <SectionHeader title="Joke of the Day" />
+              {loading || !data?.joke ? <SkeletonCard heightClass="h-32" /> : <JokeCard joke={data.joke} />}
             </div>
 
             <aside className="lg:w-[35%] flex flex-col gap-8">
@@ -244,12 +247,6 @@ export default function DailyBriefing() {
                   <OnThisDayCard events={data.onThisDay} />
                 )}
               </div>
-
-              <div>
-                <SectionHeader title="Joke of the Day" />
-                {loading || !data?.joke ? <SkeletonCard heightClass="h-32" /> : <JokeCard joke={data.joke} />}
-              </div>
-
             </aside>
           </div>
         </main>

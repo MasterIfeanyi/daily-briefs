@@ -5,12 +5,14 @@ export default function DogCard({ dog }) {
 
   return (
     <div className="bg-(--surface) border border-(--border) rounded-xl p-5 shadow-sm">
-      <div className="w-full h-56 rounded-lg overflow-hidden bg-(--muted) mb-4">
+      <div className="relative w-full h-80 rounded-lg overflow-hidden bg-(--muted) mb-4">
         {dog.imageUrl ? (
           <Image
             src={dog.imageUrl}
             alt={dog.breed}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 50vw, 400px"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-(--muted-foreground) text-sm">

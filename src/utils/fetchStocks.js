@@ -2,7 +2,7 @@ export async function fetchStocks(usTickers, worldTickers) {
   const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
 
   const usList = usTickers || ['AAPL', 'TSLA', 'NVDA', 'MSFT'];
-  const worldList = worldTickers || ['NESN.SW', 'SONY.T', 'SAP.DE'];
+  const worldList = worldTickers || ['NSRGY ', 'SONY', 'SAP'];
   const allTickers = [...usList, ...worldList];
 
   const fetchQuote = async (symbol) => {

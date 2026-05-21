@@ -1,13 +1,11 @@
 import connectDB from '../../src/lib/mongodb.js';
 import SharedBriefing from '../../src/models/SharedBriefing.js';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { fetchStocks } from '../../src/utils/fetchStocks.js';
 import { fetchNews } from '../../src/utils/fetchNews.js';
 import { fetchDog } from '../../src/utils/fetchDog.js';
 import { fetchOnThisDay } from '../../src/utils/fetchOnThisDay.js';
 import { generateBriefing } from '../../src/utils/generateBriefing.js';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 function getTodayKey() {
     return new Date().toLocaleDateString('en-CA');
@@ -35,7 +33,7 @@ export default async function handler() {
         ]);
 
         console.log('Calling Gemma...');
-        const aiContent = await generateBriefing(newsData, stockData);
+        const aiContent = await generateBriefing(newsData, stockData, dogData.breed);
 
         await SharedBriefing.create({
             date: today,
@@ -48,7 +46,11 @@ export default async function handler() {
                 wordOfTheDay: aiContent.wordOfTheDay,
                 joke: aiContent.joke,
                 news: aiContent.news || [],
-                dog: dogData,
+                dog: {
+                    imageUrl: dogData.imageUrl,
+                    breed: dogData.breed,
+                    funFact: aiContent.dogFunFact,
+                },
                 onThisDay: onThisDayData,
             },
         });
