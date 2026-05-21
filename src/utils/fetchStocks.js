@@ -19,8 +19,8 @@ export async function fetchStocks(usTickers, worldTickers) {
     symbol: q.symbol,
     name: q.name,
     price: parseFloat(q.price.toFixed(2)),
-    change: parseFloat(q.changesPercentage.toFixed(2)),
-    isUp: q.changesPercentage >= 0,
+    change: parseFloat(q.changePercentage.toFixed(2)),
+    isUp: q.changePercentage >= 0,
   });
 
   return {
@@ -29,7 +29,7 @@ export async function fetchStocks(usTickers, worldTickers) {
     raw: results.map(q => ({
       symbol: q.symbol,
       price: q.price,
-      change: q.changesPercentage,
+      change: q.changePercentage,
     })),
   };
 }
