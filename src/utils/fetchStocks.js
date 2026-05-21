@@ -7,7 +7,7 @@ const yahooFinance = new YahooFinance();
 export async function fetchStocks(usTickers, worldTickers) {
   try {
     const allTickers = [...usTickers, ...worldTickers];
-    
+
     // 3. Make the call using the new instance
     const results = await yahooFinance.quote(allTickers);
 

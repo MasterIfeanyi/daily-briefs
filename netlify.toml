@@ -5,7 +5,6 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["mongodb", "mongoose"]
@@ -13,3 +12,7 @@
 
 [build.environment]
   NODE_VERSION = "22"
+
+[[scheduled-functions]]
+  name = "generate-briefing"
+  schedule = "0 5 * * *"

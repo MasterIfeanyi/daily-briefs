@@ -1,14 +1,11 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import BriefingCache from '@/models/BriefingCache';
+import SharedBriefing from '@/models/SharedBriefing';
+import { getOrCreateSession } from '@/lib/getSession';
 import { getConfig } from '@/lib/getConfig';
 import { fetchWeather } from '@/utils/fetchWeather';
-import { fetchStocks } from '@/utils/fetchStocks';
-import { fetchNews } from '@/utils/fetchNews';
-import { generateBriefing } from '@/utils/generateBriefing';
 import { getTodayKey } from '@/lib/getTodayKey';
 import { cleanupOldBriefing } from '@/lib/cleanupOldBriefing';
-import { getOrCreateSession } from '@/lib/getSession';
 
 export async function GET() {
   try {
@@ -16,47 +13,48 @@ export async function GET() {
 
     const { sessionId, isNew } = await getOrCreateSession();
     const today = getTodayKey();
-
     await cleanupOldBriefing(today);
-
-    const cached = await BriefingCache.findOne({ sessionId, date: today });
-    if (cached) {
-      const response = NextResponse.json({ success: true, data: cached.content, fromCache: true });
-      if (isNew) attachSession(response, sessionId);
-      return response;
-    }
 
     const config = await getConfig(sessionId);
 
-    const [weatherData, stockData, rawNewsData] = await Promise.all([
+    const [shared, weatherData] = await Promise.all([
+      SharedBriefing.findOne({ date: today }),
       fetchWeather(config.coordinates.lat, config.coordinates.lon),
-      fetchStocks(config.stocks.us, config.stocks.world),
-      // fetchNews(),
     ]);
 
-    const aiContent = await generateBriefing(weatherData, rawNewsData, stockData, config);
+    if (!shared) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Briefing not yet generated for today. Check back soon.',
+        },
+        { status: 503 }
+      );
+    }
 
     const briefingContent = {
       weather: weatherData,
-      stocks: {
-        us: stockData.us,
-        world: stockData.world,
-        commentary: aiContent.stockCommentary,
-      },
-      wordOfTheDay: aiContent.wordOfTheDay,
-      joke: aiContent.joke,
-      news: aiContent.news || [],
+      stocks: shared.content.stocks,
+      wordOfTheDay: shared.content.wordOfTheDay,
+      joke: shared.content.joke,
+      news: shared.content.news || [],
     };
 
-    await BriefingCache.create({ sessionId, date: today, content: briefingContent });
+    const response = NextResponse.json({
+      success: true,
+      data: briefingContent,
+      fromCache: false,
+    });
 
-    const response = NextResponse.json({ success: true, data: briefingContent, fromCache: false });
     if (isNew) attachSession(response, sessionId);
     return response;
 
   } catch (error) {
-    console.error('BRIEFING CRASH:', error.message, error.stack);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error('BRIEFING CRASH:', error.message);
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
   }
 }
 

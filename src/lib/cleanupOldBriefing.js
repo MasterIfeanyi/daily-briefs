@@ -1,8 +1,7 @@
-// lib/cleanupOldBriefing.js
-import BriefingCache from "@/models/BriefingCache";
+import SharedBriefing from '@/models/SharedBriefing';
 
 export async function cleanupOldBriefing(today) {
-  await BriefingCache.deleteMany({
+  await SharedBriefing.deleteMany({
     date: { $ne: today }
   });
 }
