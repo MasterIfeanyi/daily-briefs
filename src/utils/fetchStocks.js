@@ -3,7 +3,7 @@ export async function fetchStocks(usTickers, worldTickers) {
 
   const allTickers = [...(usTickers || ['AAPL', 'TSLA', 'NVDA', 'MSFT']), ...(worldTickers || ['NESN.SW', 'SONY.T', 'SAP.DE'])];
 
-  const url = `https://financialmodelingprep.com/stable/quote?symbol=${allTickers.join(',')}?apikey=${FMP_API_KEY}`;
+  const url = `https://financialmodelingprep.com/stable/quote?symbol=${allTickers.join(',')}&apikey=${FMP_API_KEY}`;
 
   const res = await fetch(url);
   const results = await res.json();
