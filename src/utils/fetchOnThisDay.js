@@ -1,3 +1,16 @@
+const BANNED_WORDS = [
+  'killed',
+  'died',
+  'war',
+  'attack',
+  'disaster',
+  'crash',
+  'assassination',
+  'kills',
+  'stab',
+  'murder',
+];
+
 export async function fetchOnThisDay() {
   try {
     const now = new Date();
@@ -19,13 +32,7 @@ export async function fetchOnThisDay() {
     const positive = events
       .filter(e => {
         const text = e.text.toLowerCase();
-        return !text.includes('killed') &&
-          !text.includes('died') &&
-          !text.includes('war') &&
-          !text.includes('attack') &&
-          !text.includes('disaster') &&
-          !text.includes('crash') &&
-          !text.includes('assassination');
+        return !BANNED_WORDS.some(word => text.includes(word));
       })
       .slice(0, 3)
       .map(e => ({
