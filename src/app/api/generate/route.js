@@ -34,7 +34,7 @@ export async function GET() {
             fetchOnThisDay(),
         ]);
 
-        const aiContent = await generateBriefing(newsData, stockData);
+        const aiContent = await generateBriefing(newsData, stockData, dogData.breed);
 
         await SharedBriefing.create({
             date: today,
@@ -47,7 +47,7 @@ export async function GET() {
                 wordOfTheDay: aiContent.wordOfTheDay,
                 joke: aiContent.joke,
                 news: aiContent.news || [],
-                dog: dogData,
+                dog: aiContent.dogFunFact,
                 onThisDay: onThisDayData,
             },
         });

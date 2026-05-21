@@ -26,7 +26,7 @@ const UserConfigSchema = new mongoose.Schema({
     },
     world: {
       type: [String],
-      default: ['NSRGY', 'SONY', 'SAP'],
+      default: ['LVMHF', 'SONY', 'SAP'],
     },
   },
   updatedAt: {

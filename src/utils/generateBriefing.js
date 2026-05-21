@@ -51,7 +51,7 @@ Generate the following JSON structure exactly:
       "description": "A crisp, 1-2 sentence executive summary of what happened based ONLY on the provided news text."
     }
   ],
-  "dogFunFact": "A genuinely interesting and specific fun fact about the ${dogBreed || 'dog'} breed. Not generic. Real and surprising.",
+  "dogFunFact": "A genuinely interesting and specific fun fact about the ${dogBreed || 'dog'} breed. Not generic. Real and surprising."
 }
 
 CRITICAL RULES FOR THE "news" FIELD:
