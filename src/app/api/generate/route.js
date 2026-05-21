@@ -47,7 +47,11 @@ export async function GET() {
                 wordOfTheDay: aiContent.wordOfTheDay,
                 joke: aiContent.joke,
                 news: aiContent.news || [],
-                dog: aiContent.dogFunFact,
+                dog: {
+                    imageUrl: dogData.imageUrl,
+                    breed: dogData.breed,
+                    funFact: aiContent.dogFunFact,
+                },
                 onThisDay: onThisDayData,
             },
         });
