@@ -13,6 +13,7 @@ import NavbarLayout from "@/components/NavbarLayout";
 import { getGreeting } from "@/utils/greeting";
 import DogCard from "@/components/DogCard";
 import OnThisDayCard from "@/components/OnThisDayCard";
+import Footer from "@/components/Footer";
 
 // ✅ Moved outside DailyBriefing so React doesn't recreate it on every render
 const SectionHeader = ({ title }) => (
@@ -242,6 +243,7 @@ export default function DailyBriefing() {
           </div>
         </main>
       </div>
+      <Footer />
     </NavbarLayout>
   );
 }
