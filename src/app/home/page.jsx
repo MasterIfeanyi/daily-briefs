@@ -9,7 +9,6 @@ import JokeCard from "@/components/JokeCard";
 import RemindersPanel from "@/components/RemindersPanel";
 import WorldStocks from "@/components/WorldStocks";
 import NewsSection from "@/components/NewsSection";
-import LocationPrompt from "@/components/LocationPrompt";
 import NavbarLayout from "@/components/NavbarLayout";
 import { getGreeting } from "@/utils/greeting";
 import DogCard from "@/components/DogCard";
@@ -134,16 +133,6 @@ export default function DailyBriefing() {
   }, []);
 
 
-  // <LocationPrompt />
-
-  {
-    slowLoad && loading && (
-      <p className="text-center text-(--muted-foreground) text-sm mb-4">
-        Still loading your briefing... this can take up to 30 seconds on first load.
-      </p>
-    )
-  }
-
   if (!loading && !data) {
     return (
       <NavbarLayout>
@@ -156,9 +145,11 @@ export default function DailyBriefing() {
 
   if (slowLoad && loading) {
     return (
-      <p className="text-center text-(--muted-foreground) text-sm mt-6">
-        Still loading your briefing... this can take up to 30 seconds on first load.
-      </p>
+      <NavbarLayout>
+        <p className="text-center text-(--muted-foreground) text-sm mt-6">
+          Still loading your briefing... this can take up to 30 seconds on first load.
+        </p>
+      </NavbarLayout>
     )
   }
 
