@@ -38,6 +38,8 @@ export async function GET() {
       wordOfTheDay: shared.content.wordOfTheDay,
       joke: shared.content.joke,
       news: shared.content.news || [],
+      dog: shared.content.dog || null,
+      onThisDay: shared.content.onThisDay || [],
     };
 
     const response = NextResponse.json({

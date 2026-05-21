@@ -12,6 +12,8 @@ import NewsSection from "@/components/NewsSection";
 import LocationPrompt from "@/components/LocationPrompt";
 import NavbarLayout from "@/components/NavbarLayout";
 import { getGreeting } from "@/utils/greeting";
+import DogCard from "@/components/DogCard";
+import OnThisDayCard from "@/components/OnThisDayCard";
 
 // ✅ Moved outside DailyBriefing so React doesn't recreate it on every render
 const SectionHeader = ({ title }) => (
@@ -113,6 +115,15 @@ export default function DailyBriefing() {
           joke: { setup: "Why do programmers prefer dark mode?", punchline: "Because light attracts bugs." },
           news: [
             { title: "Real-time updates temporarily unavailable", description: "The live news stream couldn't be loaded. Check your database connections or network logs." }
+          ],
+          dog: {
+            imageUrl: null,
+            breed: 'Golden Retriever',
+            funFact: 'Golden Retrievers were originally bred in Scotland in the mid-19th century.'
+          },
+          onThisDay: [
+            { year: 1969, text: 'Apollo 11 successfully landed humans on the Moon for the first time.' },
+            { year: 1990, text: 'The Hubble Space Telescope was launched into orbit.' },
           ]
         });
       } finally {
@@ -151,79 +162,93 @@ export default function DailyBriefing() {
     )
   }
 
-return (
+  return (
 
-  <NavbarLayout>
-    <div className="min-h-screen flex flex-col">
+    <NavbarLayout>
+      <div className="min-h-screen flex flex-col">
 
-      <div className="w-full h-px bg-(--brand-secondary)" />
+        <div className="w-full h-px bg-(--brand-secondary)" />
 
-      {slowLoad && loading && (
-        <p className="text-center text-(--muted-foreground) text-sm mt-6">
-          Still loading your briefing... this can take up to 30 seconds on first load.
-        </p>
-      )}
+        {slowLoad && loading && (
+          <p className="text-center text-(--muted-foreground) text-sm mt-6">
+            Still loading your briefing... this can take up to 30 seconds on first load.
+          </p>
+        )}
 
-      <main className="max-w-7xl mx-auto w-full px-6 py-10 flex-1">
-        <h1 className="text-5xl font-extrabold text-(--foreground) tracking-tight mb-10">
-          {getGreeting()}
-        </h1>
+        <main className="max-w-7xl mx-auto w-full px-6 py-10 flex-1">
+          <h1 className="text-5xl font-extrabold text-(--foreground) tracking-tight mb-10">
+            {getGreeting()}
+          </h1>
 
-        <div className="flex flex-col lg:flex-row gap-10">
-          <div className="lg:w-[65%] flex flex-col">
+          <div className="flex flex-col lg:flex-row gap-10">
+            <div className="lg:w-[65%] flex flex-col">
 
-            <SectionHeader title="Weather" />
-            {loading || !data?.weather ? <SkeletonCard heightClass="h-40" /> : <WeatherCard weather={data.weather} />}
+              <SectionHeader title="Weather" />
+              {loading || !data?.weather ? <SkeletonCard heightClass="h-40" /> : <WeatherCard weather={data.weather} />}
 
-            <SectionHeader title="US Stocks" />
-            {loading || !data?.stocks ? (
-              <SkeletonCard heightClass="h-64" />
-            ) : (
-              <div className="bg-(--surface) border border-(--border) rounded-xl p-5 shadow-sm">
-                <div className="flex flex-col">
-                  {data.stocks.us.map((stock) => (
-                    <StockRow key={stock.symbol} stock={stock} />
-                  ))}
-                </div>
-                <p className="mt-4 text-sm text-(--muted-foreground) italic border-t border-(--border) pt-3">
-                  {data.stocks.commentary}
-                </p>
-              </div>
-            )}
-
-            <SectionHeader title="Word of the Day" />
-            {loading || !data?.wordOfTheDay ? <SkeletonCard heightClass="h-48" /> : <WordCard wordData={data.wordOfTheDay} />}
-
-            <SectionHeader title="Joke of the Day" />
-            {loading || !data?.joke ? <SkeletonCard heightClass="h-32" /> : <JokeCard joke={data.joke} />}
-          </div>
-
-          <aside className="lg:w-[35%] flex flex-col gap-8">
-            <div>
-              <SectionHeader title="Reminders" />
-              <RemindersPanel />
-            </div>
-
-            <div>
-              <SectionHeader title="World Stocks" />
-              {loading || !data?.stocks ? <SkeletonCard heightClass="h-40" /> : <WorldStocks stocks={data.stocks.world} />}
-            </div>
-
-            <div>
-              <SectionHeader title="Top News" />
-              {loading || !data?.news ? (
-                <div className="space-y-4">
-                  <SkeletonCard heightClass="h-28" />
-                  <SkeletonCard heightClass="h-28" />
-                </div>
+              <SectionHeader title="US Stocks" />
+              {loading || !data?.stocks ? (
+                <SkeletonCard heightClass="h-64" />
               ) : (
-                <NewsSection news={data.news} />
+                <div className="bg-(--surface) border border-(--border) rounded-xl p-5 shadow-sm">
+                  <div className="flex flex-col">
+                    {data.stocks.us.map((stock) => (
+                      <StockRow key={stock.symbol} stock={stock} />
+                    ))}
+                  </div>
+                  <p className="mt-4 text-sm text-(--muted-foreground) italic border-t border-(--border) pt-3">
+                    {data.stocks.commentary}
+                  </p>
+                </div>
               )}
+
+              <SectionHeader title="Dog of the Day" />
+              {loading || !data?.dog ? (
+                <SkeletonCard heightClass="h-72" />
+              ) : (
+                <DogCard dog={data.dog} />
+              )}
+
+              <SectionHeader title="On This Day" />
+              {loading || !data?.onThisDay ? (
+                <SkeletonCard heightClass="h-48" />
+              ) : (
+                <OnThisDayCard events={data.onThisDay} />
+              )}
+
+              <SectionHeader title="Word of the Day" />
+              {loading || !data?.wordOfTheDay ? <SkeletonCard heightClass="h-48" /> : <WordCard wordData={data.wordOfTheDay} />}
+
+              <SectionHeader title="Joke of the Day" />
+              {loading || !data?.joke ? <SkeletonCard heightClass="h-32" /> : <JokeCard joke={data.joke} />}
             </div>
-          </aside>
-        </div>
-      </main>
-    </div>
-  </NavbarLayout>
-);
+
+            <aside className="lg:w-[35%] flex flex-col gap-8">
+              <div>
+                <SectionHeader title="Reminders" />
+                <RemindersPanel />
+              </div>
+
+              <div>
+                <SectionHeader title="World Stocks" />
+                {loading || !data?.stocks ? <SkeletonCard heightClass="h-40" /> : <WorldStocks stocks={data.stocks.world} />}
+              </div>
+
+              <div>
+                <SectionHeader title="Top News" />
+                {loading || !data?.news ? (
+                  <div className="space-y-4">
+                    <SkeletonCard heightClass="h-28" />
+                    <SkeletonCard heightClass="h-28" />
+                  </div>
+                ) : (
+                  <NewsSection news={data.news} />
+                )}
+              </div>
+            </aside>
+          </div>
+        </main>
+      </div>
+    </NavbarLayout>
+  );
 }

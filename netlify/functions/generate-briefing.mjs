@@ -3,6 +3,8 @@ import SharedBriefing from '../../src/models/SharedBriefing.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { fetchStocks } from '../../src/utils/fetchStocks.js';
 import { fetchNews } from '../../src/utils/fetchNews.js';
+import { fetchDog } from '../../src/utils/fetchDog.js';
+import { fetchOnThisDay } from '../../src/utils/fetchOnThisDay.js';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -70,9 +72,11 @@ export default async function handler() {
         }
 
         console.log('Fetching stocks and news...');
-        const [stockData, newsData] = await Promise.all([
+        const [stockData, newsData, dogData, onThisDayData] = await Promise.all([
             fetchStocks(),
             fetchNews(),
+            fetchDog(),
+            fetchOnThisDay(),
         ]);
 
         console.log('Calling Gemma...');

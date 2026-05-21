@@ -1,35 +1,49 @@
 export async function fetchStocks(usTickers, worldTickers) {
-  const FMP_API_KEY = process.env.FMP_API_KEY;
-
-  const allTickers = [...(usTickers || ['AAPL', 'TSLA', 'NVDA', 'MSFT']), ...(worldTickers || ['NESN.SW', 'SONY.T', 'SAP.DE'])];
-
-  const url = `https://financialmodelingprep.com/stable/quote?symbol=${allTickers.join(',')}&apikey=${FMP_API_KEY}`;
-
-  const res = await fetch(url);
-  const results = await res.json();
-
-  if (!Array.isArray(results)) {
-    throw new Error('FMP API returned unexpected response: ' + JSON.stringify(results));
-  }
+  const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
 
   const usList = usTickers || ['AAPL', 'TSLA', 'NVDA', 'MSFT'];
   const worldList = worldTickers || ['NESN.SW', 'SONY.T', 'SAP.DE'];
+  const allTickers = [...usList, ...worldList];
+
+  const fetchQuote = async (symbol) => {
+    const res = await fetch(
+      `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_API_KEY}`
+    );
+    const data = await res.json();
+    return { symbol, data };
+  };
+
+  const fetchProfile = async (symbol) => {
+    const res = await fetch(
+      `https://finnhub.io/api/v1/stock/profile2?symbol=${symbol}&token=${FINNHUB_API_KEY}`
+    );
+    const data = await res.json();
+    return { symbol, name: data.name || symbol };
+  };
+
+  const [quotes, profiles] = await Promise.all([
+    Promise.all(allTickers.map(fetchQuote)),
+    Promise.all(allTickers.map(fetchProfile)),
+  ]);
+
+  const nameMap = {};
+  profiles.forEach(p => { nameMap[p.symbol] = p.name; });
 
   const format = (q) => ({
     symbol: q.symbol,
-    name: q.name,
-    price: parseFloat(q.price.toFixed(2)),
-    change: parseFloat(q.changePercentage.toFixed(2)),
-    isUp: q.changePercentage >= 0,
+    name: nameMap[q.symbol] || q.symbol,
+    price: parseFloat(q.data.c.toFixed(2)),
+    change: parseFloat(q.data.dp.toFixed(2)),
+    isUp: q.data.dp >= 0,
   });
 
   return {
-    us: results.filter(q => usList.includes(q.symbol)).map(format),
-    world: results.filter(q => worldList.includes(q.symbol)).map(format),
-    raw: results.map(q => ({
+    us: quotes.filter(q => usList.includes(q.symbol)).map(format),
+    world: quotes.filter(q => worldList.includes(q.symbol)).map(format),
+    raw: quotes.map(q => ({
       symbol: q.symbol,
-      price: q.price,
-      change: q.changePercentage,
+      price: q.data.c,
+      change: q.data.dp,
     })),
   };
 }
