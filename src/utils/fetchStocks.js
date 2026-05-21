@@ -6,19 +6,27 @@ export async function fetchStocks(usTickers, worldTickers) {
   const allTickers = [...usList, ...worldList];
 
   const fetchQuote = async (symbol) => {
-    const res = await fetch(
-      `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_API_KEY}`
-    );
-    const data = await res.json();
-    return { symbol, data };
+    try {
+      const res = await fetch(
+        `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_API_KEY}`
+      );
+      const data = await res.json();
+      return { symbol, data };
+    } catch {
+      return { symbol, data: { c: 0, dp: 0 } };
+    }
   };
 
   const fetchProfile = async (symbol) => {
-    const res = await fetch(
-      `https://finnhub.io/api/v1/stock/profile2?symbol=${symbol}&token=${FINNHUB_API_KEY}`
-    );
-    const data = await res.json();
-    return { symbol, name: data.name || symbol };
+    try {
+      const res = await fetch(
+        `https://finnhub.io/api/v1/stock/profile2?symbol=${symbol}&token=${FINNHUB_API_KEY}`
+      );
+      const data = await res.json();
+      return { symbol, name: data.name || symbol };
+    } catch {
+      return { symbol, name: symbol };
+    }
   };
 
   const [quotes, profiles] = await Promise.all([
@@ -32,9 +40,9 @@ export async function fetchStocks(usTickers, worldTickers) {
   const format = (q) => ({
     symbol: q.symbol,
     name: nameMap[q.symbol] || q.symbol,
-    price: parseFloat(q.data.c.toFixed(2)),
-    change: parseFloat(q.data.dp.toFixed(2)),
-    isUp: q.data.dp >= 0,
+    price: parseFloat((q.data.c || 0).toFixed(2)),
+    change: parseFloat((q.data.dp || 0).toFixed(2)),
+    isUp: (q.data.dp || 0) >= 0,
   });
 
   return {
@@ -42,8 +50,8 @@ export async function fetchStocks(usTickers, worldTickers) {
     world: quotes.filter(q => worldList.includes(q.symbol)).map(format),
     raw: quotes.map(q => ({
       symbol: q.symbol,
-      price: q.data.c,
-      change: q.data.dp,
+      price: q.data.c || 0,
+      change: q.data.dp || 0,
     })),
   };
 }

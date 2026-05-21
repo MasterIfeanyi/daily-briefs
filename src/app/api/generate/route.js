@@ -6,6 +6,7 @@ import { fetchNews } from '@/utils/fetchNews.js';
 import { fetchDog } from '@/utils/fetchDog';
 import { fetchOnThisDay } from '@/utils/fetchOnThisDay';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { generateBriefing } from '@/utils/generateBriefing';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -80,7 +81,7 @@ export async function GET() {
             fetchOnThisDay(),
         ]);
 
-        const aiContent = await generateContent(stockData, newsData);
+        const aiContent = await generateBriefing(newsData, stockData);
 
         await SharedBriefing.create({
             date: today,

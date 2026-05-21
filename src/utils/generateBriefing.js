@@ -1,13 +1,12 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import {parseLooseJson} from './parseLooseJson';
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+import { parseLooseJson } from './parseLooseJson';
 import { withRetry } from './callWithRetry';
 
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-export async function generateBriefing(weatherData, rawNewsData, stockData, config) {
+export async function generateBriefing(rawNewsData, stockData) {
   const model = genAI.getGenerativeModel({
     model: 'gemma-4-26b-a4b-it',
-    // model: 'gemini-2.0-flash',
     generationConfig: {
       responseMimeType: "application/json",
     }
@@ -20,11 +19,6 @@ export async function generateBriefing(weatherData, rawNewsData, stockData, conf
   const prompt = `
 You are an expert news editor and daily briefing assistant. Your task is to process real-world raw information data feeds and format them neatly.
 Respond ONLY with valid JSON, no markdown, no backticks, no explanation.
-
-The user is based in ${config.city}.
-Current weather: ${JSON.stringify(weatherData.temperature)}
-Sunrise: ${weatherData.sunrise}
-Sunset: ${weatherData.sunset}
 
 Here is today's real raw news data:
 ${JSON.stringify(rawNewsData)}
@@ -64,7 +58,7 @@ CRITICAL RULES FOR THE "news" FIELD:
 2. Select the top 3 most relevant or high-impact global stories from that list.
 3. Clean up the titles (remove source tags like ' - Reuters') and summarize the content body text into exactly 1 or 2 clean sentences.
 
-For stockCommentary, write one sentence of interesting context about today's markets based on these stocks: ${JSON.stringify(allStocks.map(s => ({ symbol: s.symbol, price: s.regularMarketPrice, change: s.regularMarketChangePercent })))}
+For stockCommentary, write one sentence of interesting context about today's markets based on these stocks: ${JSON.stringify(allStocks.map(s => ({ symbol: s.symbol, price: s.price, change: s.change })))}
 
 Return ONLY a raw JSON object. Do NOT include any introductory sentences, conversational responses, conversational filler, markdown explanations, or markdown bullets outside of the JSON output structure.
 `;
@@ -72,6 +66,5 @@ Return ONLY a raw JSON object. Do NOT include any introductory sentences, conver
   const result = await withRetry(() => model.generateContent(prompt));
   const text = result.response.text().trim();
 
-  // Clean and parse the strict response text
   return parseLooseJson(text);
 }

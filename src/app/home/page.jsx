@@ -209,18 +209,8 @@ export default function DailyBriefing() {
                 <DogCard dog={data.dog} />
               )}
 
-              <SectionHeader title="On This Day" />
-              {loading || !data?.onThisDay ? (
-                <SkeletonCard heightClass="h-48" />
-              ) : (
-                <OnThisDayCard events={data.onThisDay} />
-              )}
-
               <SectionHeader title="Word of the Day" />
               {loading || !data?.wordOfTheDay ? <SkeletonCard heightClass="h-48" /> : <WordCard wordData={data.wordOfTheDay} />}
-
-              <SectionHeader title="Joke of the Day" />
-              {loading || !data?.joke ? <SkeletonCard heightClass="h-32" /> : <JokeCard joke={data.joke} />}
             </div>
 
             <aside className="lg:w-[35%] flex flex-col gap-8">
@@ -245,6 +235,21 @@ export default function DailyBriefing() {
                   <NewsSection news={data.news} />
                 )}
               </div>
+
+              <div>
+                <SectionHeader title="On This Day" />
+                {loading || !data?.onThisDay ? (
+                  <SkeletonCard heightClass="h-48" />
+                ) : (
+                  <OnThisDayCard events={data.onThisDay} />
+                )}
+              </div>
+
+              <div>
+                <SectionHeader title="Joke of the Day" />
+                {loading || !data?.joke ? <SkeletonCard heightClass="h-32" /> : <JokeCard joke={data.joke} />}
+              </div>
+
             </aside>
           </div>
         </main>
