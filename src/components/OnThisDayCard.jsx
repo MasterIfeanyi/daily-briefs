@@ -7,7 +7,7 @@ export default function OnThisDayCard({ events }) {
         {events.map((event, index) => (
           <div
             key={index}
-            className="flex gap-4 pb-4 border-b border-(--border) last:border-0 last:pb-0"
+            className="flex gap-4 py-3 border-b border-(--border) last:border-0 last:pb-0"
           >
             <div className="shrink-0 w-16 text-center">
               <span className="text-2xl font-extrabold text-(--brand) leading-none">

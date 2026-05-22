@@ -1,4 +1,4 @@
-export async function fetchWordAndJoke() {
+async function fetchWordAndJoke() {
   let wordOfTheDay = null;
   let joke = null;
 
@@ -18,36 +18,36 @@ export async function fetchWordAndJoke() {
   }
 
   try {
-    const randomWordRes = await fetch(
-      'https://api.api-ninjas.com/v1/randomword',
-      { headers: { 'X-Api-Key': process.env.API_NINJAS_KEY } }
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const year = now.getFullYear();
+
+    const res = await fetch(
+      `https://api.wikimedia.org/feed/v1/wikipedia/en/featured/${year}/${month}/${day}`,
+      {
+        headers: {
+          'User-Agent': 'DailyBriefingApp/1.0 (contact@dailybriefing.app)',
+        },
+      }
     );
-    const randomWordData = await randomWordRes.json();
-    const word = randomWordData.word;
 
-    if (!word) throw new Error('No word returned from API Ninjas');
+    const data = await res.json();
+    const wotd = data.wotd;
 
-    const dictRes = await fetch(
-      `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`
-    );
-    const dictData = await dictRes.json();
-    const entry = Array.isArray(dictData) ? dictData[0] : null;
-    const meaning = entry?.meanings?.[0];
-    const definition = meaning?.definitions?.[0];
-
-    if (entry && definition) {
+    if (wotd) {
       wordOfTheDay = {
-        word: entry.word,
-        partOfSpeech: meaning.partOfSpeech || 'noun',
-        definition: definition.definition,
-        usedInSentence: definition.example || null,
-        origin: entry.origin || null,
+        word: wotd.title,
+        partOfSpeech: wotd.part_of_speech || 'word',
+        definition: wotd.definitions?.[0]?.definition ||
+          wotd.description ||
+          'No definition available.',
+        usedInSentence: wotd.examples?.[0]?.example || null,
+        origin: null,
       };
-    } else {
-      throw new Error(`Dictionary had no entry for: ${word}`);
     }
   } catch (err) {
-    console.error('Word fetch failed:', err.message);
+    console.error('Wikimedia word fetch failed:', err.message);
   }
 
   return { wordOfTheDay, joke };
