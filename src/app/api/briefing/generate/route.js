@@ -36,7 +36,7 @@ export async function GET() {
 
     const { weather, stocks, news, dog } = cache.rawData;
 
-    const aiContent = await callWithRetry(generateBriefing(news, stocks, dog.breed));
+    const aiContent = await callWithRetry(() => generateBriefing(news, stocks, dog.breed));
 
     const briefingContent = {
       weather,
