@@ -16,3 +16,6 @@
 [[scheduled-functions]]
   name = "generate-briefing"
   schedule = "0 5 * * *"
+
+[functions."api-briefing-generate"]
+  timeout = 60

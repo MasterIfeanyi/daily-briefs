@@ -6,7 +6,6 @@ import BriefingCache from '@/models/BriefingCache';
 import { getOrCreateSession } from '@/lib/getSession';
 import { generateBriefing } from '@/utils/generateBriefing';
 import { getTodayKey } from '@/lib/getTodayKey';
-import { callWithRetry } from '@/utils/callWithRetry';
 
 export async function GET() {
   try {
@@ -36,7 +35,7 @@ export async function GET() {
 
     const { weather, stocks, news, dog } = cache.rawData;
 
-    const aiContent = await callWithRetry(() => generateBriefing(news, stocks, dog.breed));
+    const aiContent = await generateBriefing(news, stocks, dog.breed);
 
     const briefingContent = {
       weather,
@@ -88,3 +87,6 @@ function attachSession(response, sessionId) {
     path: '/',
   });
 }
+
+export const runtime = 'nodejs';
+export const maxDuration = 60;
