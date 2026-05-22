@@ -1,20 +1,29 @@
 export async function fetchWordAndJoke() {
   try {
-    const [wordRes, jokeRes] = await Promise.all([
-      fetch('https://api.wordnik.com/v4/words.json/wordOfTheDay?api_key=a2a73e7b947cad4227a0b83062480ca7e7ad7b9f8'),
+    const [jokeRes] = await Promise.all([
       fetch('https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,political,racist,sexist&type=twopart'),
     ]);
 
-    const wordData = await wordRes.json();
     const jokeData = await jokeRes.json();
+
+    const wordRes = await fetch('https://random-word-api.vercel.app/api?words=1');
+    const wordArray = await wordRes.json();
+    const word = wordArray[0] || 'serendipity';
+
+    const dictRes = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+    const dictData = await dictRes.json();
+
+    const entry = Array.isArray(dictData) ? dictData[0] : null;
+    const meaning = entry?.meanings?.[0];
+    const definition = meaning?.definitions?.[0];
 
     return {
       wordOfTheDay: {
-        word: wordData.word || 'Serendipity',
-        partOfSpeech: wordData.definitions?.[0]?.partOfSpeech || 'noun',
-        definition: wordData.definitions?.[0]?.text || 'The occurrence of events by chance in a happy or beneficial way.',
-        usedInSentence: wordData.examples?.[0]?.text || 'It was pure serendipity that they met that day.',
-        origin: 'From the Persian fairy tale "The Three Princes of Serendip".',
+        word: entry?.word || word,
+        partOfSpeech: meaning?.partOfSpeech || 'noun',
+        definition: definition?.definition || 'A wonderful and unexpected discovery.',
+        usedInSentence: definition?.example || `The word ${word} captures something truly unique.`,
+        origin: entry?.origin || 'Origin unknown.',
       },
       joke: {
         setup: jokeData.setup || 'Why do programmers prefer dark mode?',

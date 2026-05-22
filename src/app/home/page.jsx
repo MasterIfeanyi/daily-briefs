@@ -149,21 +149,21 @@ export default function DailyBriefing() {
               )}
 
               <SectionHeader title="Word of the Day" />
-              {fastLoading
+              {fastLoading || !fastData?.wordOfTheDay
                 ? <SkeletonCard heightClass="h-48" />
                 : <WordCard wordData={fastData.wordOfTheDay} />
               }
 
-              <SectionHeader title="Dog of the Day" />
-              {fastLoading
-                ? <SkeletonCard heightClass="h-80" />
-                : <DogCard dog={fastData.dog} />
-              }
-
               <SectionHeader title="Joke of the Day" />
-              {fastLoading
+              {fastLoading || !fastData?.joke
                 ? <SkeletonCard heightClass="h-32" />
                 : <JokeCard joke={fastData.joke} />
+              }
+
+              <SectionHeader title="Dog of the Day" />
+              {fastLoading || !fastData?.dog
+                ? <SkeletonCard heightClass="h-80" />
+                : <DogCard dog={fastData.dog} />
               }
             </div>
 
@@ -201,7 +201,7 @@ export default function DailyBriefing() {
               </div>
 
               <SectionHeader title="On This Day" />
-              {fastLoading
+              {fastLoading || !fastData?.onThisDay
                 ? <SkeletonCard heightClass="h-48" />
                 : <OnThisDayCard events={fastData.onThisDay} />
               }
