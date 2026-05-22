@@ -51,39 +51,57 @@ export default function DailyBriefing() {
   }, []);
 
   useEffect(() => {
-    async function bootstrap() {
-      try {
-        setLoadingStep('checking');
-        const checkRes = await fetch('/api/briefing', { credentials: 'include' });
-        const checkData = await checkRes.json();
+  async function bootstrap() {
+    try {
+      setLoadingStep('checking');
+      const checkRes = await fetch('/api/briefing', { credentials: 'include' });
+      const checkData = await checkRes.json();
 
-        if (checkData.status === 'complete') {
-          setData(checkData.data);
+      if (checkData.status === 'complete') {
+        setData(checkData.data);
+        setLoadingStep('done');
+        return;
+      }
+
+      setLoadingStep('fetching');
+      const dataRes = await fetch('/api/briefing/data', { credentials: 'include' });
+      const dataJson = await dataRes.json();
+      if (!dataJson.success) throw new Error(dataJson.error);
+
+      setLoadingStep('generating');
+
+      // Keep calling generate until it succeeds or gives a real error
+      let genJson = null;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const genRes = await fetch('/api/briefing/generate', { credentials: 'include' });
+        genJson = await genRes.json();
+
+        if (genJson.status === 'complete') {
+          setData(genJson.data);
           setLoadingStep('done');
           return;
         }
 
-        setLoadingStep('fetching');
-        const dataRes = await fetch('/api/briefing/data', { credentials: 'include' });
-        const dataJson = await dataRes.json();
-        if (!dataJson.success) throw new Error(dataJson.error);
+        if (genJson.status === 'timeout') {
+          // Gemma didn't finish in time, try again
+          continue;
+        }
 
-        setLoadingStep('generating');
-        // Kick off generation — this returns immediately now
-        await fetch('/api/briefing/generate', { credentials: 'include' });
-
-        // Poll every 3 seconds until the briefing is ready
-        await pollUntilReady();
-
-      } catch (err) {
-        console.error('Bootstrap failed:', err.message);
-        setError(err.message);
-        setLoadingStep('done');
+        // Any other error, stop
+        throw new Error(genJson.error || 'Generation failed.');
       }
-    }
 
-    bootstrap();
-  }, [pollUntilReady]);
+      throw new Error('Briefing took too long to generate after several attempts.');
+
+    } catch (err) {
+      console.error('Bootstrap failed:', err.message);
+      setError(err.message);
+      setLoadingStep('done');
+    }
+  }
+
+  bootstrap();
+}, []);
 
   useEffect(() => {
     const hasPrompted = document.cookie.includes('briefing_location_prompted=true');
