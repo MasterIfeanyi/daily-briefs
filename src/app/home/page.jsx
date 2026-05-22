@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import SkeletonCard from "@/components/SkeletonCard";
+import { useState, useEffect, useCallback } from "react";
 import WeatherCard from "@/components/WeatherCard";
 import StockRow from "@/components/StockRow";
 import WordCard from "@/components/WordCard";
@@ -36,6 +35,21 @@ export default function DailyBriefing() {
   const [loadingStep, setLoadingStep] = useState('checking');
   const [error, setError] = useState(null);
 
+  const pollUntilReady = useCallback(async () => {
+    const maxAttempts = 20; // 20 x 3s = 60 seconds max wait
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise((res) => setTimeout(res, 3000));
+      const res = await fetch('/api/briefing', { credentials: 'include' });
+      const json = await res.json();
+      if (json.status === 'complete') {
+        setData(json.data);
+        setLoadingStep('done');
+        return;
+      }
+    }
+    throw new Error('Briefing took too long to generate.');
+  }, []);
+
   useEffect(() => {
     async function bootstrap() {
       try {
@@ -52,23 +66,14 @@ export default function DailyBriefing() {
         setLoadingStep('fetching');
         const dataRes = await fetch('/api/briefing/data', { credentials: 'include' });
         const dataJson = await dataRes.json();
-
         if (!dataJson.success) throw new Error(dataJson.error);
 
-        if (dataJson.status === 'complete') {
-          setData(dataJson.data);
-          setLoadingStep('done');
-          return;
-        }
-
         setLoadingStep('generating');
-        const genRes = await fetch('/api/briefing/generate', { credentials: 'include' });
-        const genJson = await genRes.json();
+        // Kick off generation — this returns immediately now
+        await fetch('/api/briefing/generate', { credentials: 'include' });
 
-        if (!genJson.success) throw new Error(genJson.error);
-
-        setData(genJson.data);
-        setLoadingStep('done');
+        // Poll every 3 seconds until the briefing is ready
+        await pollUntilReady();
 
       } catch (err) {
         console.error('Bootstrap failed:', err.message);
@@ -78,7 +83,7 @@ export default function DailyBriefing() {
     }
 
     bootstrap();
-  }, []);
+  }, [pollUntilReady]);
 
   useEffect(() => {
     const hasPrompted = document.cookie.includes('briefing_location_prompted=true');
@@ -180,7 +185,6 @@ export default function DailyBriefing() {
 
               <SectionHeader title="Joke of the Day" />
               <JokeCard joke={data.joke} />
-
 
             </div>
 

@@ -7,10 +7,13 @@ import { getOrCreateSession } from '@/lib/getSession';
 import { generateBriefing } from '@/utils/generateBriefing';
 import { getTodayKey } from '@/lib/getTodayKey';
 
+// app/api/briefing/generate/route.js
+export const runtime = 'nodejs';
+export const maxDuration = 60;
+
 export async function GET() {
   try {
     await connectDB();
-
     const { sessionId, isNew } = await getOrCreateSession();
     const today = getTodayKey();
 
@@ -18,40 +21,42 @@ export async function GET() {
 
     if (!cache) {
       return NextResponse.json(
-        { success: false, error: 'No raw data found. Call /api/briefing/data first.' },
+        { success: false, error: 'No raw data found.' },
         { status: 400 }
       );
     }
 
     if (cache.status === 'complete') {
-      const response = NextResponse.json({
-        success: true,
-        data: cache.content,
-        fromCache: true,
-      });
+      const response = NextResponse.json({ success: true, data: cache.content, fromCache: true });
       if (isNew) attachSession(response, sessionId);
       return response;
     }
 
-    const { weather, stocks, news, dog } = cache.rawData;
+    // Don't await — fire and forget
+    runGenerationInBackground(sessionId, today, cache);
 
+    const response = NextResponse.json({ success: true, status: 'generating' });
+    if (isNew) attachSession(response, sessionId);
+    return response;
+
+  } catch (error) {
+    console.error('GENERATE CRASH:', error.message);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+async function runGenerationInBackground(sessionId, today, cache) {
+  try {
+    const { weather, stocks, news, dog } = cache.rawData;
     const aiContent = await generateBriefing(news, stocks, dog.breed);
 
     const briefingContent = {
       weather,
-      stocks: {
-        us: stocks.us,
-        world: stocks.world,
-        commentary: aiContent.stockCommentary,
-      },
+      stocks: { us: stocks.us, world: stocks.world, commentary: aiContent.stockCommentary },
       wordOfTheDay: aiContent.wordOfTheDay,
       joke: aiContent.joke,
       news: aiContent.news || [],
-      dog: {
-        imageUrl: dog.imageUrl,
-        breed: dog.breed,
-        funFact: aiContent.dogFunFact,
-      },
+      dog: { imageUrl: dog.imageUrl, breed: dog.breed, funFact: aiContent.dogFunFact },
       onThisDay: cache.rawData.onThisDay || [],
     };
 
@@ -60,22 +65,8 @@ export async function GET() {
       { status: 'complete', content: briefingContent },
       { new: true }
     );
-
-    const response = NextResponse.json({
-      success: true,
-      data: briefingContent,
-      fromCache: false,
-    });
-
-    if (isNew) attachSession(response, sessionId);
-    return response;
-
-  } catch (error) {
-    console.error('GENERATE CRASH:', error.message);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+  } catch (err) {
+    console.error('Background generation failed:', err.message);
   }
 }
 
@@ -87,6 +78,3 @@ function attachSession(response, sessionId) {
     path: '/',
   });
 }
-
-export const runtime = 'nodejs';
-export const maxDuration = 60;
