@@ -35,6 +35,10 @@ export async function GET() {
                     wordOfTheDay: existing.rawData.wordOfTheDay,
                     joke: existing.rawData.joke,
                 },
+                rawNews: (existing.rawData.news || []).slice(0, 3).map(item => ({
+                    title: item.title || item.name || 'Untitled',
+                    description: item.description || item.content || item.summary || 'No description available.',
+                })),
                 aiContent: existing.status === 'complete' ? {
                     news: existing.content.news,
                     stockCommentary: existing.content.stocks.commentary,
@@ -82,6 +86,10 @@ export async function GET() {
                 wordOfTheDay: wordAndJoke.wordOfTheDay,
                 joke: wordAndJoke.joke,
             },
+            rawNews: newsData.slice(0, 3).map(item => ({
+                title: item.title || item.name || 'Untitled',
+                description: item.description || item.content || item.summary || 'No description available.',
+            })),
             aiContent: null,
         });
 

@@ -30,6 +30,7 @@ export default function DailyBriefing() {
   const [fastLoading, setFastLoading] = useState(true);
   const [aiLoading, setAiLoading] = useState(true);
   const [aiError, setAiError] = useState(false);
+  const [rawNews, setRawNews] = useState(null);
 
   useEffect(() => {
     async function loadBriefing() {
@@ -42,6 +43,7 @@ export default function DailyBriefing() {
         if (!dataJson.success) throw new Error(dataJson.error);
 
         setFastData(dataJson.data);
+        setRawNews(dataJson.rawNews || null);
         setFastLoading(false);
 
         if (dataJson.aiContent) {
@@ -149,16 +151,30 @@ export default function DailyBriefing() {
               )}
 
               <SectionHeader title="Word of the Day" />
-              {fastLoading || !fastData?.wordOfTheDay
-                ? <SkeletonCard heightClass="h-48" />
-                : <WordCard wordData={fastData.wordOfTheDay} />
-              }
+{fastLoading || fastData?.wordOfTheDay === undefined ? (
+  <SkeletonCard heightClass="h-48" />
+) : !fastData?.wordOfTheDay ? (
+  <div className="bg-(--surface) border border-(--border) rounded-xl p-5 shadow-sm">
+    <p className="text-sm text-(--muted-foreground)">
+      Word of the day could not be loaded today.
+    </p>
+  </div>
+) : (
+  <WordCard wordData={fastData.wordOfTheDay} />
+)}
 
-              <SectionHeader title="Joke of the Day" />
-              {fastLoading || !fastData?.joke
-                ? <SkeletonCard heightClass="h-32" />
-                : <JokeCard joke={fastData.joke} />
-              }
+<SectionHeader title="Joke of the Day" />
+{fastLoading || fastData?.joke === undefined ? (
+  <SkeletonCard heightClass="h-32" />
+) : !fastData?.joke ? (
+  <div className="bg-(--surface) border border-(--border) rounded-xl p-5 shadow-sm">
+    <p className="text-sm text-(--muted-foreground)">
+      No joke today. The internet is being serious.
+    </p>
+  </div>
+) : (
+  <JokeCard joke={fastData.joke} />
+)}
 
               <SectionHeader title="Dog of the Day" />
               {fastLoading || !fastData?.dog
@@ -189,14 +205,8 @@ export default function DailyBriefing() {
                     <SkeletonCard heightClass="h-28" />
                     <SkeletonCard heightClass="h-28" />
                   </div>
-                ) : aiError || !news ? (
-                  <div className="bg-(--surface) border border-(--border) rounded-xl p-5 shadow-sm">
-                    <p className="text-sm text-(--muted-foreground)">
-                      News summary unavailable right now. Please check back shortly.
-                    </p>
-                  </div>
                 ) : (
-                  <NewsSection news={news} />
+                  <NewsSection news={news || rawNews || []} />
                 )}
               </div>
 
