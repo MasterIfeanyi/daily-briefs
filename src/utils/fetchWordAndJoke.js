@@ -1,3 +1,10 @@
+const WORD_LIST = [
+  'ephemeral', 'serendipity', 'melancholy', 'eloquent', 'resilience',
+  'enigmatic', 'luminous', 'tenacious', 'wanderlust', 'solitude',
+  'euphoria', 'labyrinth', 'nostalgia', 'tranquil', 'vivacious',
+  'harbinger', 'zenith', 'cascade', 'reverie', 'steadfast',
+];
+
 export async function fetchWordAndJoke() {
   let wordOfTheDay = null;
   let joke = null;
@@ -18,36 +25,32 @@ export async function fetchWordAndJoke() {
   }
 
   try {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-
-    const res = await fetch(
-      `https://en.wiktionary.org/w/api.php?action=parse&page=Wiktionary:Word_of_the_day/${year}/${month}/${day}&prop=wikitext&format=json&origin=*`
+    // Pick a word based on the day of the year so it changes daily
+    const dayOfYear = Math.floor(
+      (new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000
     );
+    const word = WORD_LIST[dayOfYear % WORD_LIST.length];
+
+    const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
     const data = await res.json();
-    const wikitext = data?.parse?.wikitext?.['*'];
 
-    if (wikitext) {
-      const wordMatch = wikitext.match(/\|word=([^\n|]+)/);
-      const posMatch = wikitext.match(/\|pos=([^\n|]+)/);
-      const defMatch = wikitext.match(/\|def=([^\n|]+)/);
-      const exampleMatch = wikitext.match(/\|ex=([^\n|]+)/);
-      const etymMatch = wikitext.match(/\|etym=([^\n|]+)/);
+    if (Array.isArray(data) && data.length > 0) {
+      const entry = data[0];
+      const meaning = entry.meanings?.[0];
+      const definition = meaning?.definitions?.[0];
 
-      if (wordMatch && defMatch) {
+      if (entry.word && definition?.definition) {
         wordOfTheDay = {
-          word: wordMatch[1].trim(),
-          partOfSpeech: posMatch?.[1]?.trim() || 'word',
-          definition: defMatch[1].trim(),
-          usedInSentence: exampleMatch?.[1]?.trim() || null,
-          origin: etymMatch?.[1]?.trim() || null,
+          word: entry.word,
+          partOfSpeech: meaning?.partOfSpeech || 'word',
+          definition: definition.definition,
+          usedInSentence: definition.example || null,
+          origin: entry.origin || null,
         };
       }
     }
   } catch (err) {
-    console.error('Wiktionary word fetch failed:', err.message);
+    console.error('Word fetch failed:', err.message);
   }
 
   return { wordOfTheDay, joke };
