@@ -24,60 +24,56 @@ const SectionHeader = ({ title }) => (
   </div>
 );
 
-const LoadingScreen = ({ message }) => (
-  <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-    <div className="w-10 h-10 border-4 border-(--brand) border-t-transparent rounded-full animate-spin" />
-    <p className="text-(--muted-foreground) text-sm font-medium">{message}</p>
-  </div>
-);
-
 export default function DailyBriefing() {
-  const [data, setData] = useState(null);
-  const [loadingStep, setLoadingStep] = useState('checking');
-  const [error, setError] = useState(null);
+  const [fastData, setFastData] = useState(null);
+  const [aiContent, setAiContent] = useState(null);
+  const [fastLoading, setFastLoading] = useState(true);
+  const [aiLoading, setAiLoading] = useState(true);
+  const [aiError, setAiError] = useState(false);
 
   useEffect(() => {
-    async function bootstrap() {
+    async function loadBriefing() {
       try {
-        setLoadingStep('checking');
-        const checkRes = await fetch('/api/briefing', { credentials: 'include' });
-        const checkData = await checkRes.json();
-
-        if (checkData.status === 'complete') {
-          setData(checkData.data);
-          setLoadingStep('done');
-          return;
-        }
-
-        setLoadingStep('fetching');
-        const dataRes = await fetch('/api/briefing/data', { credentials: 'include' });
+        const dataRes = await fetch('/api/briefing/data', {
+          credentials: 'include',
+        });
         const dataJson = await dataRes.json();
 
         if (!dataJson.success) throw new Error(dataJson.error);
 
-        if (dataJson.status === 'complete') {
-          setData(dataJson.data);
-          setLoadingStep('done');
+        setFastData(dataJson.data);
+        setFastLoading(false);
+
+        if (dataJson.aiContent) {
+          setAiContent(dataJson.aiContent);
+          setAiLoading(false);
           return;
         }
 
-        setLoadingStep('generating');
-        const genRes = await fetch('/api/briefing/generate', { credentials: 'include' });
-        const genJson = await genRes.json();
+        try {
+          const genRes = await fetch('/api/briefing/generate', {
+            credentials: 'include',
+          });
+          const genJson = await genRes.json();
 
-        if (!genJson.success) throw new Error(genJson.error);
+          if (!genJson.success) throw new Error(genJson.error);
 
-        setData(genJson.data);
-        setLoadingStep('done');
+          setAiContent(genJson.aiContent);
+        } catch (aiErr) {
+          console.error('AI generation failed:', aiErr.message);
+          setAiError(true);
+        } finally {
+          setAiLoading(false);
+        }
 
       } catch (err) {
-        console.error('Bootstrap failed:', err.message);
-        setError(err.message);
-        setLoadingStep('done');
+        console.error('Fast data fetch failed:', err.message);
+        setFastLoading(false);
+        setAiLoading(false);
       }
     }
 
-    bootstrap();
+    loadBriefing();
   }, []);
 
   useEffect(() => {
@@ -108,41 +104,8 @@ export default function DailyBriefing() {
     }
   }, []);
 
-  if (loadingStep === 'checking') {
-    return (
-      <NavbarLayout>
-        <LoadingScreen message="Checking your briefing..." />
-      </NavbarLayout>
-    );
-  }
-
-  if (loadingStep === 'fetching') {
-    return (
-      <NavbarLayout>
-        <LoadingScreen message="Fetching weather, stocks, and news..." />
-      </NavbarLayout>
-    );
-  }
-
-  if (loadingStep === 'generating') {
-    return (
-      <NavbarLayout>
-        <LoadingScreen message="Asking Gemma to prepare your briefing..." />
-      </NavbarLayout>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <NavbarLayout>
-        <div className="min-h-screen flex items-center justify-center">
-          <p className="text-(--muted-foreground)">
-            Something went wrong. Please refresh the page.
-          </p>
-        </div>
-      </NavbarLayout>
-    );
-  }
+  const stockCommentary = aiContent?.stockCommentary || null;
+  const news = aiContent?.news || null;
 
   return (
     <NavbarLayout>
@@ -158,30 +121,50 @@ export default function DailyBriefing() {
             <div className="lg:w-[65%] flex flex-col">
 
               <SectionHeader title="Weather" />
-              <WeatherCard weather={data.weather} />
+              {fastLoading
+                ? <SkeletonCard heightClass="h-40" />
+                : <WeatherCard weather={fastData.weather} />
+              }
 
               <SectionHeader title="US Stocks" />
-              <div className="bg-(--surface) border border-(--border) rounded-xl p-5 shadow-sm">
-                <div className="flex flex-col">
-                  {data.stocks.us.map((stock) => (
-                    <StockRow key={stock.symbol} stock={stock} />
-                  ))}
+              {fastLoading ? (
+                <SkeletonCard heightClass="h-64" />
+              ) : (
+                <div className="bg-(--surface) border border-(--border) rounded-xl p-5 shadow-sm">
+                  <div className="flex flex-col">
+                    {fastData.stocks.us.map((stock) => (
+                      <StockRow key={stock.symbol} stock={stock} />
+                    ))}
+                  </div>
+                  {aiLoading ? (
+                    <p className="mt-4 text-sm text-(--muted-foreground) italic border-t border-(--border) pt-3 animate-pulse">
+                      Analysing markets...
+                    </p>
+                  ) : (
+                    <p className="mt-4 text-sm text-(--muted-foreground) italic border-t border-(--border) pt-3">
+                      {stockCommentary || 'Market commentary unavailable.'}
+                    </p>
+                  )}
                 </div>
-                <p className="mt-4 text-sm text-(--muted-foreground) italic border-t border-(--border) pt-3">
-                  {data.stocks.commentary}
-                </p>
-              </div>
+              )}
 
               <SectionHeader title="Word of the Day" />
-              <WordCard wordData={data.wordOfTheDay} />
+              {fastLoading
+                ? <SkeletonCard heightClass="h-48" />
+                : <WordCard wordData={fastData.wordOfTheDay} />
+              }
 
               <SectionHeader title="Dog of the Day" />
-              <DogCard dog={data.dog} />
+              {fastLoading
+                ? <SkeletonCard heightClass="h-80" />
+                : <DogCard dog={fastData.dog} />
+              }
 
               <SectionHeader title="Joke of the Day" />
-              <JokeCard joke={data.joke} />
-
-
+              {fastLoading
+                ? <SkeletonCard heightClass="h-32" />
+                : <JokeCard joke={fastData.joke} />
+              }
             </div>
 
             <aside className="lg:w-[35%] flex flex-col gap-8">
@@ -192,18 +175,36 @@ export default function DailyBriefing() {
 
               <div>
                 <SectionHeader title="World Stocks" />
-                <WorldStocks stocks={data.stocks.world} />
+                {fastLoading
+                  ? <SkeletonCard heightClass="h-40" />
+                  : <WorldStocks stocks={fastData.stocks.world} />
+                }
               </div>
 
               <div>
                 <SectionHeader title="Top News" />
-                <NewsSection news={data.news} />
+                {aiLoading ? (
+                  <div className="space-y-4">
+                    <SkeletonCard heightClass="h-28" />
+                    <SkeletonCard heightClass="h-28" />
+                    <SkeletonCard heightClass="h-28" />
+                  </div>
+                ) : aiError || !news ? (
+                  <div className="bg-(--surface) border border-(--border) rounded-xl p-5 shadow-sm">
+                    <p className="text-sm text-(--muted-foreground)">
+                      News summary unavailable right now. Please check back shortly.
+                    </p>
+                  </div>
+                ) : (
+                  <NewsSection news={news} />
+                )}
               </div>
 
-              <div>
-                <SectionHeader title="On This Day" />
-                <OnThisDayCard events={data.onThisDay} />
-              </div>
+              <SectionHeader title="On This Day" />
+              {fastLoading
+                ? <SkeletonCard heightClass="h-48" />
+                : <OnThisDayCard events={fastData.onThisDay} />
+              }
             </aside>
           </div>
         </main>
