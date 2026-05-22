@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
+import SkeletonCard from "@/components/SkeletonCard";
 import WeatherCard from "@/components/WeatherCard";
 import StockRow from "@/components/StockRow";
 import WordCard from "@/components/WordCard";
@@ -35,73 +36,49 @@ export default function DailyBriefing() {
   const [loadingStep, setLoadingStep] = useState('checking');
   const [error, setError] = useState(null);
 
-  const pollUntilReady = useCallback(async () => {
-    const maxAttempts = 20; // 20 x 3s = 60 seconds max wait
-    for (let i = 0; i < maxAttempts; i++) {
-      await new Promise((res) => setTimeout(res, 3000));
-      const res = await fetch('/api/briefing', { credentials: 'include' });
-      const json = await res.json();
-      if (json.status === 'complete') {
-        setData(json.data);
-        setLoadingStep('done');
-        return;
-      }
-    }
-    throw new Error('Briefing took too long to generate.');
-  }, []);
-
   useEffect(() => {
-  async function bootstrap() {
-    try {
-      setLoadingStep('checking');
-      const checkRes = await fetch('/api/briefing', { credentials: 'include' });
-      const checkData = await checkRes.json();
+    async function bootstrap() {
+      try {
+        setLoadingStep('checking');
+        const checkRes = await fetch('/api/briefing', { credentials: 'include' });
+        const checkData = await checkRes.json();
 
-      if (checkData.status === 'complete') {
-        setData(checkData.data);
-        setLoadingStep('done');
-        return;
-      }
-
-      setLoadingStep('fetching');
-      const dataRes = await fetch('/api/briefing/data', { credentials: 'include' });
-      const dataJson = await dataRes.json();
-      if (!dataJson.success) throw new Error(dataJson.error);
-
-      setLoadingStep('generating');
-
-      // Keep calling generate until it succeeds or gives a real error
-      let genJson = null;
-      for (let attempt = 0; attempt < 5; attempt++) {
-        const genRes = await fetch('/api/briefing/generate', { credentials: 'include' });
-        genJson = await genRes.json();
-
-        if (genJson.status === 'complete') {
-          setData(genJson.data);
+        if (checkData.status === 'complete') {
+          setData(checkData.data);
           setLoadingStep('done');
           return;
         }
 
-        if (genJson.status === 'timeout') {
-          // Gemma didn't finish in time, try again
-          continue;
+        setLoadingStep('fetching');
+        const dataRes = await fetch('/api/briefing/data', { credentials: 'include' });
+        const dataJson = await dataRes.json();
+
+        if (!dataJson.success) throw new Error(dataJson.error);
+
+        if (dataJson.status === 'complete') {
+          setData(dataJson.data);
+          setLoadingStep('done');
+          return;
         }
 
-        // Any other error, stop
-        throw new Error(genJson.error || 'Generation failed.');
+        setLoadingStep('generating');
+        const genRes = await fetch('/api/briefing/generate', { credentials: 'include' });
+        const genJson = await genRes.json();
+
+        if (!genJson.success) throw new Error(genJson.error);
+
+        setData(genJson.data);
+        setLoadingStep('done');
+
+      } catch (err) {
+        console.error('Bootstrap failed:', err.message);
+        setError(err.message);
+        setLoadingStep('done');
       }
-
-      throw new Error('Briefing took too long to generate after several attempts.');
-
-    } catch (err) {
-      console.error('Bootstrap failed:', err.message);
-      setError(err.message);
-      setLoadingStep('done');
     }
-  }
 
-  bootstrap();
-}, []);
+    bootstrap();
+  }, []);
 
   useEffect(() => {
     const hasPrompted = document.cookie.includes('briefing_location_prompted=true');
@@ -203,6 +180,7 @@ export default function DailyBriefing() {
 
               <SectionHeader title="Joke of the Day" />
               <JokeCard joke={data.joke} />
+
 
             </div>
 
