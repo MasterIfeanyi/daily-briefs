@@ -1,11 +1,8 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import SharedBriefing from '@/models/SharedBriefing';
+import BriefingCache from '@/models/BriefingCache';
 import { getOrCreateSession } from '@/lib/getSession';
-import { getConfig } from '@/lib/getConfig';
-import { fetchWeather } from '@/utils/fetchWeather';
 import { getTodayKey } from '@/lib/getTodayKey';
-import { cleanupOldBriefing } from '@/lib/cleanupOldBriefing';
 
 export async function GET() {
   try {
@@ -13,46 +10,29 @@ export async function GET() {
 
     const { sessionId, isNew } = await getOrCreateSession();
     const today = getTodayKey();
-    await cleanupOldBriefing(today);
 
-    const config = await getConfig(sessionId);
+    const cache = await BriefingCache.findOne({ sessionId, date: today });
 
-    const [shared, weatherData] = await Promise.all([
-      SharedBriefing.findOne({ date: today }),
-      fetchWeather(config.coordinates.lat, config.coordinates.lon),
-    ]);
-
-    if (!shared) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Briefing not yet generated for today. Check back soon.',
-        },
-        { status: 503 }
-      );
+    if (cache?.status === 'complete') {
+      const response = NextResponse.json({
+        success: true,
+        status: 'complete',
+        data: cache.content,
+      });
+      if (isNew) attachSession(response, sessionId);
+      return response;
     }
-
-    const briefingContent = {
-      weather: weatherData,
-      stocks: shared.content.stocks,
-      wordOfTheDay: shared.content.wordOfTheDay,
-      joke: shared.content.joke,
-      news: shared.content.news || [],
-      dog: shared.content.dog || null,
-      onThisDay: shared.content.onThisDay || [],
-    };
 
     const response = NextResponse.json({
       success: true,
-      data: briefingContent,
-      fromCache: false,
+      status: 'pending',
     });
 
     if (isNew) attachSession(response, sessionId);
     return response;
 
   } catch (error) {
-    console.error('BRIEFING CRASH:', error.message);
+    console.error('BRIEFING CHECK CRASH:', error.message);
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }

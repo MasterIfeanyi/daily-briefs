@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 
-
 const BriefingCacheSchema = new mongoose.Schema({
   sessionId: {
     type: String,
@@ -11,9 +10,18 @@ const BriefingCacheSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  rawData: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null,
+  },
   content: {
     type: mongoose.Schema.Types.Mixed,
-    required: true,
+    default: null,
+  },
+  status: {
+    type: String,
+    enum: ['raw', 'complete'],
+    default: 'raw',
   },
   generatedAt: {
     type: Date,
@@ -23,4 +31,5 @@ const BriefingCacheSchema = new mongoose.Schema({
 
 BriefingCacheSchema.index({ sessionId: 1, date: 1 }, { unique: true });
 
-export default mongoose.models.BriefingCache || mongoose.model('BriefingCache', BriefingCacheSchema);
+export default mongoose.models.BriefingCache ||
+  mongoose.model('BriefingCache', BriefingCacheSchema);
