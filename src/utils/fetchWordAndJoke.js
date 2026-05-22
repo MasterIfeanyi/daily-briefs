@@ -1,4 +1,4 @@
-async function fetchWordAndJoke() {
+export async function fetchWordAndJoke() {
   let wordOfTheDay = null;
   let joke = null;
 
