@@ -15,7 +15,7 @@ export default function OnThisDayCard({ events }) {
               </span>
             </div>
             <p className="text-sm text-(--foreground) leading-relaxed">
-              {event.text}
+              {event.event}
             </p>
           </div>
         ))}

@@ -150,19 +150,7 @@ export default function DailyBriefing() {
               ) : !fastData?.weather ? (
                 <AiErrorCard message="Weather data could not be loaded today." />
               ) : (
-                <>
-                  <WeatherCard weather={fastData.weather} />
-                  {/* Weather tip sits below the weather card */}
-                  {aiLoading ? (
-                    <p className="mt-3 text-sm text-(--muted-foreground) italic animate-pulse">
-                      Getting a tip for your day...
-                    </p>
-                  ) : weatherTip ? (
-                    <p className="mt-3 text-sm text-(--muted-foreground) italic">
-                      {weatherTip}
-                    </p>
-                  ) : null}
-                </>
+                <WeatherCard weather={fastData.weather} weatherTip={weatherTip} />
               )}
 
               <SectionHeader title="US Stocks" />
