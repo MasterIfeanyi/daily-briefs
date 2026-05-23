@@ -30,6 +30,8 @@ export async function GET() {
           wordOfTheDay: cache.content.wordOfTheDay,
           joke: cache.content.joke,
           dogFunFact: cache.content.dog?.funFact || null,
+          weatherTip: cache.content.weatherTip || null,
+          onThisDay: cache.content.onThisDay || null,
         },
         fromCache: true,
       });
@@ -38,18 +40,26 @@ export async function GET() {
     }
 
     const { news, stocks } = cache.rawData;
-
-    // Pass the dog breed so Gemma can write a specific fun fact
     const dogBreed = cache.rawData.dog?.breed || null;
+    const weatherData = cache.rawData.weather || null;
+    const locationInfo = cache.rawData.locationInfo || null;
+    const onThisDayMeta = cache.rawData.onThisDayMeta || null;
 
-    const aiResult = await generateBriefing(news, stocks, dogBreed);
+    const aiResult = await generateBriefing(
+      news,
+      stocks,
+      dogBreed,
+      weatherData,
+      locationInfo,
+      onThisDayMeta
+    );
 
     const updatedContent = {
       weather: cache.rawData.weather,
       stocks: {
         us: stocks.us,
         world: stocks.world,
-        commentary: aiResult.stockCommentary,
+        commentary: aiResult.stockCommentary || null,
       },
       wordOfTheDay: aiResult.wordOfTheDay || null,
       joke: aiResult.joke || null,
@@ -57,9 +67,10 @@ export async function GET() {
       dog: {
         imageUrl: cache.rawData.dog?.imageUrl || null,
         breed: cache.rawData.dog?.breed || null,
-        funFact: aiResult.dogFunFact || null, // AI-generated, breed-specific
+        funFact: aiResult.dogFunFact || null,
       },
-      onThisDay: cache.rawData.onThisDay || [],
+      weatherTip: aiResult.weatherTip || null,
+      onThisDay: aiResult.onThisDay || null,
     };
 
     await BriefingCache.findOneAndUpdate(
@@ -76,6 +87,8 @@ export async function GET() {
         wordOfTheDay: aiResult.wordOfTheDay || null,
         joke: aiResult.joke || null,
         dogFunFact: aiResult.dogFunFact || null,
+        weatherTip: aiResult.weatherTip || null,
+        onThisDay: aiResult.onThisDay || null,
       },
       fromCache: false,
     });
