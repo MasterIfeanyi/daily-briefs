@@ -2,15 +2,15 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { parseLooseJson } from './parseLooseJson';
 import { withRetry } from './callWithRetry';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export async function generateBriefing(rawNewsData, stockData) {
-  const model = genAI.getGenerativeModel({
-    model: 'gemma-4-26b-a4b-it',
-    generationConfig: {
-      responseMimeType: 'application/json',
-    },
-  });
+  // const model = genAI.getGenerativeModel({
+  //   model: 'gemma-4-26b-a4b-it',
+  //   generationConfig: {
+  //     responseMimeType: 'application/json',
+  //   },
+  // });
 
   const usStocks = stockData && Array.isArray(stockData.us) ? stockData.us : [];
   const worldStocks = stockData && Array.isArray(stockData.world) ? stockData.world : [];
@@ -49,7 +49,42 @@ ${JSON.stringify(allStocks.map(s => ({ symbol: s.symbol, price: s.price, change:
 Return ONLY the raw JSON object. Nothing else.  Do NOT include any introductory sentences, conversational responses, conversational filler, markdown explanations, or markdown bullets outside of the JSON output structure.
 `;
 
-  const result = await withRetry(() => model.generateContent(prompt));
-  const text = result.response.text().trim();
-  return parseLooseJson(text);
+  const makeRequest = async () => {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://ifeanyi-brief.netlify.app',
+        'X-Title': 'Daily Briefing',
+      },
+      body: JSON.stringify({
+        model: "google/gemma-4-26b-a4b-it:free",
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.8,
+        max_tokens: 1024,
+        response_format: { type: 'json_object' },
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`OpenRouter error: ${err}`);
+    }
+
+    const data = await res.json();
+    const text = data.choices[0].message.content.trim();
+    return parseLooseJson(text);
+  };
+
+  return withRetry(makeRequest);
+
+  // const result = await withRetry(() => model.generateContent(prompt));
+  // const text = result.response.text().trim();
+  // return parseLooseJson(text);
 }
