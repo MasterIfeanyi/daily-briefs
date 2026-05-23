@@ -13,14 +13,14 @@ export async function fetchDog() {
     return {
       imageUrl,
       breed,
-      funFact: `Today's dog is a ${breed}. Dogs have been humans' best friends for over 15,000 years.`,
+      funFact: null, // AI will fill this in during the generate step
     };
   } catch (err) {
     console.error('Dog fetch failed:', err);
     return {
       imageUrl: null,
       breed: 'Unknown',
-      funFact: 'Dogs are wonderful companions.',
+      funFact: null,
     };
   }
 }

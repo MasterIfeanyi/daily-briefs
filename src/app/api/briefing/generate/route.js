@@ -27,6 +27,9 @@ export async function GET() {
         aiContent: {
           news: cache.content.news,
           stockCommentary: cache.content.stocks.commentary,
+          wordOfTheDay: cache.content.wordOfTheDay,
+          joke: cache.content.joke,
+          dogFunFact: cache.content.dog?.funFact || null,
         },
         fromCache: true,
       });
@@ -36,22 +39,25 @@ export async function GET() {
 
     const { news, stocks } = cache.rawData;
 
-    const aiContent = await generateBriefing(news, stocks);
+    // Pass the dog breed so Gemma can write a specific fun fact
+    const dogBreed = cache.rawData.dog?.breed || null;
+
+    const aiResult = await generateBriefing(news, stocks, dogBreed);
 
     const updatedContent = {
       weather: cache.rawData.weather,
       stocks: {
         us: stocks.us,
         world: stocks.world,
-        commentary: aiContent.stockCommentary,
+        commentary: aiResult.stockCommentary,
       },
-      wordOfTheDay: cache.rawData.wordOfTheDay,
-      joke: cache.rawData.joke,
-      news: aiContent.news || [],
+      wordOfTheDay: aiResult.wordOfTheDay || null,
+      joke: aiResult.joke || null,
+      news: aiResult.news || [],
       dog: {
-        imageUrl: cache.rawData.dog.imageUrl,
-        breed: cache.rawData.dog.breed,
-        funFact: cache.rawData.dog.funFact,
+        imageUrl: cache.rawData.dog?.imageUrl || null,
+        breed: cache.rawData.dog?.breed || null,
+        funFact: aiResult.dogFunFact || null, // AI-generated, breed-specific
       },
       onThisDay: cache.rawData.onThisDay || [],
     };
@@ -65,8 +71,11 @@ export async function GET() {
     const response = NextResponse.json({
       success: true,
       aiContent: {
-        news: aiContent.news || [],
-        stockCommentary: aiContent.stockCommentary,
+        news: aiResult.news || [],
+        stockCommentary: aiResult.stockCommentary || null,
+        wordOfTheDay: aiResult.wordOfTheDay || null,
+        joke: aiResult.joke || null,
+        dogFunFact: aiResult.dogFunFact || null,
       },
       fromCache: false,
     });

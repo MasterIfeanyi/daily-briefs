@@ -10,7 +10,8 @@ import { fetchDog } from '@/utils/fetchDog';
 import { fetchOnThisDay } from '@/utils/fetchOnThisDay';
 import { getTodayKey } from '@/lib/getTodayKey';
 import { cleanupOldBriefings } from '@/lib/cleanupOldBriefings';
-import { fetchWordAndJoke } from '@/utils/fetchWordAndJoke';
+
+// fetchWordAndJoke import is gone - AI handles word and joke now
 
 export async function GET() {
     try {
@@ -32,16 +33,19 @@ export async function GET() {
                     stocks: existing.rawData.stocks,
                     dog: existing.rawData.dog,
                     onThisDay: existing.rawData.onThisDay,
-                    wordOfTheDay: existing.rawData.wordOfTheDay,
-                    joke: existing.rawData.joke,
                 },
                 rawNews: (existing.rawData.news || []).slice(0, 3).map(item => ({
                     title: item.title || item.name || 'Untitled',
                     description: item.description || item.content || item.summary || 'No description available.',
                 })),
+                // If AI has already run today, send back all AI fields so the frontend
+                // skips the generate call entirely
                 aiContent: existing.status === 'complete' ? {
                     news: existing.content.news,
                     stockCommentary: existing.content.stocks.commentary,
+                    wordOfTheDay: existing.content.wordOfTheDay,
+                    joke: existing.content.joke,
+                    dogFunFact: existing.content.dog?.funFact || null,
                 } : null,
             });
             if (isNew) attachSession(response, sessionId);
@@ -50,14 +54,14 @@ export async function GET() {
 
         const config = await getConfig(sessionId);
 
-        const [weatherData, stockData, newsData, dogData, onThisDayData, wordAndJoke] =
+        // No more fetchWordAndJoke here
+        const [weatherData, stockData, newsData, dogData, onThisDayData] =
             await Promise.all([
                 fetchWeather(config.coordinates.lat, config.coordinates.lon),
                 fetchStocks(),
                 fetchNews(),
                 fetchDog(),
                 fetchOnThisDay(),
-                fetchWordAndJoke(),
             ]);
 
         await BriefingCache.create({
@@ -68,10 +72,10 @@ export async function GET() {
                 weather: weatherData,
                 stocks: stockData,
                 news: newsData,
-                dog: dogData,
+                dog: dogData,         // { imageUrl, breed, funFact: null }
                 onThisDay: onThisDayData,
-                wordOfTheDay: wordAndJoke.wordOfTheDay,
-                joke: wordAndJoke.joke,
+                // wordOfTheDay and joke are no longer stored in rawData
+                // they come from the AI generate step
             },
         });
 
@@ -83,8 +87,8 @@ export async function GET() {
                 stocks: stockData,
                 dog: dogData,
                 onThisDay: onThisDayData,
-                wordOfTheDay: wordAndJoke.wordOfTheDay,
-                joke: wordAndJoke.joke,
+                // wordOfTheDay and joke intentionally absent here
+                // the frontend will get them from aiContent after generate runs
             },
             rawNews: newsData.slice(0, 3).map(item => ({
                 title: item.title || item.name || 'Untitled',
@@ -104,8 +108,6 @@ export async function GET() {
         );
     }
 }
-
-
 
 function attachSession(response, sessionId) {
     response.cookies.set('briefing_session', sessionId, {

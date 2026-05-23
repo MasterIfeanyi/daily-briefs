@@ -108,6 +108,9 @@ export default function DailyBriefing() {
 
   const stockCommentary = aiContent?.stockCommentary || null;
   const news = aiContent?.news || null;
+  const wordOfTheDay = aiContent?.wordOfTheDay || null;
+  const joke = aiContent?.joke || null;
+  const dogFunFact = aiContent?.dogFunFact || null;
 
   return (
     <NavbarLayout>
@@ -151,35 +154,35 @@ export default function DailyBriefing() {
               )}
 
               <SectionHeader title="Word of the Day" />
-{fastLoading || fastData?.wordOfTheDay === undefined ? (
-  <SkeletonCard heightClass="h-48" />
-) : !fastData?.wordOfTheDay ? (
-  <div className="bg-(--surface) border border-(--border) rounded-xl p-5 shadow-sm">
-    <p className="text-sm text-(--muted-foreground)">
-      Word of the day could not be loaded today.
-    </p>
-  </div>
-) : (
-  <WordCard wordData={fastData.wordOfTheDay} />
-)}
+              {aiLoading || !wordOfTheDay ? (
+                <SkeletonCard heightClass="h-48" />
+              ) : !wordOfTheDay ? (
+                <div className="bg-(--surface) border border-(--border) rounded-xl p-5 shadow-sm">
+                  <p className="text-sm text-(--muted-foreground)">
+                    Word of the day could not be loaded today.
+                  </p>
+                </div>
+              ) : (
+                <WordCard wordData={wordOfTheDay} />
+              )}
 
-<SectionHeader title="Joke of the Day" />
-{fastLoading || fastData?.joke === undefined ? (
-  <SkeletonCard heightClass="h-32" />
-) : !fastData?.joke ? (
-  <div className="bg-(--surface) border border-(--border) rounded-xl p-5 shadow-sm">
-    <p className="text-sm text-(--muted-foreground)">
-      No joke today. The internet is being serious.
-    </p>
-  </div>
-) : (
-  <JokeCard joke={fastData.joke} />
-)}
+              <SectionHeader title="Joke of the Day" />
+              {aiLoading || joke === undefined ? (
+                <SkeletonCard heightClass="h-32" />
+              ) : !joke ? (
+                <div className="bg-(--surface) border border-(--border) rounded-xl p-5 shadow-sm">
+                  <p className="text-sm text-(--muted-foreground)">
+                    No joke today. The internet is being serious.
+                  </p>
+                </div>
+              ) : (
+                <JokeCard joke={joke} />
+              )}
 
               <SectionHeader title="Dog of the Day" />
               {fastLoading || !fastData?.dog
                 ? <SkeletonCard heightClass="h-80" />
-                : <DogCard dog={fastData.dog} />
+                : <DogCard dog={{ ...fastData.dog, funFact: dogFunFact }} />
               }
             </div>
 
